@@ -95,12 +95,16 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
+    // The first read is deferred into a callback, like the reInit/select
+    // subscriptions below, rather than setting state in the effect body.
+    const initialReadId = setTimeout(() => onSelect(api), 0)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
     return () => {
-      api?.off("select", onSelect)
+      clearTimeout(initialReadId)
+      api.off("reInit", onSelect)
+      api.off("select", onSelect)
     }
   }, [api, onSelect])
 
