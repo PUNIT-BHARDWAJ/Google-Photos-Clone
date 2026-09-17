@@ -3,12 +3,12 @@ package project.backend.services;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -58,6 +58,8 @@ public class PhotoService {
     private final AlbumPhotoRepository albumPhotoRepository;
     private final SharedLinkRepository sharedLinkRepository;
     private final MetadataExtractionService metadataExtractionService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final AiQueueTracker aiQueueTracker;
 
     public PhotoService(
             PhotoRepository photoRepository,
@@ -65,7 +67,9 @@ public class PhotoService {
             AlbumRepository albumRepository,
             AlbumPhotoRepository albumPhotoRepository,
             SharedLinkRepository sharedLinkRepository,
-            MetadataExtractionService metadataExtractionService
+            MetadataExtractionService metadataExtractionService,
+            ApplicationEventPublisher eventPublisher,
+            AiQueueTracker aiQueueTracker
     ) {
         this.photoRepository = photoRepository;
         this.imageKitService = imageKitService;
@@ -73,6 +77,8 @@ public class PhotoService {
         this.albumPhotoRepository = albumPhotoRepository;
         this.sharedLinkRepository = sharedLinkRepository;
         this.metadataExtractionService = metadataExtractionService;
+        this.eventPublisher = eventPublisher;
+        this.aiQueueTracker = aiQueueTracker;
     }
 
     @Transactional(readOnly = true)
@@ -81,17 +87,6 @@ public class PhotoService {
                 ? photoRepository.findTimeline(user.getId(), status, pageable)
                 : photoRepository.findTimelineByStarred(user.getId(), status, starred, pageable);
         return toPageResponse(page);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<PhotoResponse> searchPhotos(User user, String query, PhotoStatus status, Pageable pageable) {
-        String pattern = "%" + escapeLikePattern(query.toLowerCase(Locale.ROOT)) + "%";
-        Page<Photo> page = photoRepository.searchTimeline(user.getId(), status, pattern, pageable);
-        return toPageResponse(page);
-    }
-
-    private static String escapeLikePattern(String value) {
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @Transactional(readOnly = true)
@@ -199,6 +194,9 @@ public class PhotoService {
         );
 
         PhotoResponse photo = createPhoto(user, request, file.getOriginalFilename());
+        // Handled after this transaction commits, on a background thread - the
+        // upload response never waits for AI analysis.
+        eventPublisher.publishEvent(new PhotoUploadedEvent(photo.id()));
 
         boolean needsThumbnailBackfill = filePath != null
                 && (photo.thumbnailUrl() == null || photo.thumbnailUrl().isBlank());
@@ -429,7 +427,14 @@ public class PhotoService {
                 photo.isStarred(),
                 metadata != null ? metadata.getDateTaken() : null,
                 metadata != null && metadata.hasCameraData(),
-                metadata != null && metadata.hasGpsData()
+                metadata != null && metadata.hasGpsData(),
+                photo.getAiCaption(),
+                photo.getAiTagList(),
+                photo.getAiSceneType(),
+                photo.getAiDominantColorList(),
+                photo.getAiProcessedAt(),
+                photo.getAiError(),
+                aiQueueTracker.isPending(photo.getId())
         );
     }
 }

@@ -22,11 +22,13 @@ import jakarta.validation.Valid;
 import project.backend.domain.User;
 import project.backend.dto.AddPhotosToAlbumReqest;
 import project.backend.dto.AlbumResponse;
+import project.backend.dto.AlbumSuggestionResponse;
 import project.backend.dto.CreateAlbumRequest;
 import project.backend.dto.PageResponse;
 import project.backend.dto.PhotoResponse;
 import project.backend.dto.UpdateAlbumRequest;
 import project.backend.services.AlbumService;
+import project.backend.services.AlbumSuggestionService;
 import project.backend.services.UserService;
 
 @RestController
@@ -34,10 +36,12 @@ import project.backend.services.UserService;
 public class AlbumController {
 
     private final AlbumService albumService;
+    private final AlbumSuggestionService albumSuggestionService;
     private final UserService userService;
 
-    public AlbumController(AlbumService albumService, UserService userService) {
+    public AlbumController(AlbumService albumService, AlbumSuggestionService albumSuggestionService, UserService userService) {
         this.albumService = albumService;
+        this.albumSuggestionService = albumSuggestionService;
         this.userService = userService;
     }
 
@@ -45,6 +49,17 @@ public class AlbumController {
     public ResponseEntity<List<AlbumResponse>> listAlbums(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.getByEmail(userDetails.getUsername());
         return ResponseEntity.ok(albumService.listAlbums(user));
+    }
+
+    // Scene, tag and date groupings from existing AI data - no Gemini call.
+    // tz (an IANA zone like "Asia/Kolkata") names date groups in local time.
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<AlbumSuggestionResponse>> getSuggestions(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) String tz
+    ) {
+        User user = userService.getByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(albumSuggestionService.suggest(user, tz));
     }
 
     @PostMapping

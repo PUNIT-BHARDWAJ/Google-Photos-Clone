@@ -78,6 +78,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 
+    // 503/429/502/504 - never 401, which the client treats as an expired session.
+    @ExceptionHandler(GeminiException.class)
+    public ResponseEntity<ApiErrorResponse> handleGemini(GeminiException ex) {
+        return build(ex.getKind().status(), ex.getMessage());
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return build(HttpStatus.CONTENT_TOO_LARGE, "File is too large");

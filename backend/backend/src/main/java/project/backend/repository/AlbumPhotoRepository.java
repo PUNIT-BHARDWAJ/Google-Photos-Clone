@@ -40,6 +40,14 @@ public interface AlbumPhotoRepository extends JpaRepository<AlbumPhoto, UUID> {
 
     List<AlbumPhoto> findByPhotoId(UUID photoId);
 
+    // [albumId, photoId] pairs for every album the user owns - album
+    // suggestions skip groups that an existing album already covers.
+    @Query("""
+           SELECT ap.album.id, ap.photo.id FROM AlbumPhoto ap
+           WHERE ap.album.user.id = :userId
+           """)
+    List<Object[]> findAlbumPhotoPairsByUserId(@Param("userId") UUID userId);
+
     @Query("""
            SELECT ap FROM AlbumPhoto ap
            JOIN FETCH ap.photo

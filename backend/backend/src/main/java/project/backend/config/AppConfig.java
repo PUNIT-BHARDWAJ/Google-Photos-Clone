@@ -14,7 +14,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class , CorsProperties.class, OAuth2Properties.class, AppUrlProperties.class})
+@EnableConfigurationProperties({JwtProperties.class , CorsProperties.class, OAuth2Properties.class, AppUrlProperties.class, GeminiProperties.class})
 public class AppConfig {
 
     // PasswordEncoder and AuthenticationManager live here (not in SecurityConfig)

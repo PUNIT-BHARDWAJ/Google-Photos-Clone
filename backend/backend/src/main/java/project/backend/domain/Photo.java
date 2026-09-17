@@ -20,6 +20,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,6 +100,29 @@ public class Photo {
     @Embedded
     private PhotoMetadata metadata;
 
+    // Gemini analysis. All nullable: photos start unanalyzed, a failed run
+    // sets aiError and leaves aiProcessedAt null (so "analyze all" retries
+    // it), and the feature is off entirely without an API key.
+    @Column(name = "ai_caption", columnDefinition = "TEXT")
+    private String aiCaption;
+
+    // Lowercase, deduplicated, sorted and comma-separated: "beach, ocean, sunset".
+    @Column(name = "ai_tags", columnDefinition = "TEXT")
+    private String aiTags;
+
+    @Column(name = "ai_scene_type", length = 50)
+    private String aiSceneType;
+
+    // Comma-separated color names: "blue, gold, white".
+    @Column(name = "ai_dominant_colors")
+    private String aiDominantColors;
+
+    @Column(name = "ai_processed_at")
+    private Instant aiProcessedAt;
+
+    @Column(name = "ai_error", length = 500)
+    private String aiError;
+
     // "_" plus 9-10 random URL-safe characters right before the extension.
     private static final Pattern IMAGEKIT_UNIQUE_SUFFIX =
             Pattern.compile("^(.+)_([A-Za-z0-9_-]{9,10})(\\.[A-Za-z0-9]+)?$");
@@ -128,6 +153,28 @@ public class Photo {
         }
         String extension = matcher.group(3);
         return matcher.group(1) + (extension != null ? extension : "");
+    }
+
+    public List<String> getAiTagList() {
+        return splitList(aiTags);
+    }
+
+    public List<String> getAiDominantColorList() {
+        return splitList(aiDominantColors);
+    }
+
+    public static String joinList(List<String> values) {
+        return values == null || values.isEmpty() ? null : String.join(", ", values);
+    }
+
+    public static List<String> splitList(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(part -> !part.isEmpty())
+                .toList();
     }
 
     @PrePersist

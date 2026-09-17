@@ -2,6 +2,7 @@
 
 import { RiCameraLine, RiMapPinLine, RiShareLine } from "@remixicon/react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AiAnalysisSection } from "@/components/photos/ai-analysis-section";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { useSharedLinks } from "@/hooks/use-shared-links";
@@ -13,6 +14,8 @@ type PhotoInfoPanelProps = {
   photo: Photo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Clicking an AI tag - the viewer closes and searches for it. */
+  onSearchTag: (tag: string) => void;
 };
 
 function Unknown() {
@@ -42,7 +45,7 @@ function formatCoordinate(value: number, axis: "lat" | "lng") {
   return `${Math.abs(value).toFixed(4)}° ${direction}`;
 }
 
-export function PhotoInfoPanel({ photo, open, onOpenChange }: PhotoInfoPanelProps) {
+export function PhotoInfoPanel({ photo, open, onOpenChange, onSearchTag }: PhotoInfoPanelProps) {
   const { data: metadata, isLoading } = usePhotoMetadata(photo.id, open);
   const { data: links } = useSharedLinks();
   const sharedLink = links?.find((link) => link.targetType === "PHOTO" && link.targetId === photo.id);
@@ -134,6 +137,9 @@ export function PhotoInfoPanel({ photo, open, onOpenChange }: PhotoInfoPanelProp
                   </div>
                 </>
               )}
+
+              <Separator />
+              <AiAnalysisSection photo={photo} open={open} onSearchTag={onSearchTag} />
             </>
           )}
         </div>

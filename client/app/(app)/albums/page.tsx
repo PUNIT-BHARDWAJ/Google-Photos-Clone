@@ -4,6 +4,7 @@ import { RiFolderImageLine } from "@remixicon/react";
 import { Spinner } from "@/components/ui/spinner";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { AlbumGrid } from "@/components/albums/album-grid";
+import { AlbumSuggestions } from "@/components/albums/album-suggestions";
 import { ErrorState } from "@/components/layout/error-state";
 import { CreateAlbumDialog } from "@/components/albums/create-album-dialog";
 import { useAlbums } from "@/hooks/use-albums";
@@ -28,6 +29,8 @@ export default function AlbumsPage() {
         </div>
         <CreateAlbumDialog />
       </div>
+
+      <AlbumSuggestions />
 
       {isError && !albums ? (
         <ErrorState error={error} onRetry={() => refetch()} retrying={isRefetching} />

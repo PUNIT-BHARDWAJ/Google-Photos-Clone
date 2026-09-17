@@ -28,6 +28,11 @@ type PhotoGridProps = {
   isFetchingNextPage?: boolean;
   onLoadMore?: () => void;
   renderTileMenu?: (photo: Photo) => React.ReactNode;
+  /**
+   * Day headings, newest day first (the default). Off for results whose order
+   * matters in itself - AI-ranked search - which render as one ordered grid.
+   */
+  groupByDate?: boolean;
 };
 
 function haveSameItems(a: readonly Photo[], b: readonly Photo[]) {
@@ -66,6 +71,7 @@ export function PhotoGrid({
   isFetchingNextPage,
   onLoadMore,
   renderTileMenu,
+  groupByDate = true,
 }: PhotoGridProps) {
   // Pages rebuild `photos` (flatMap over query pages) on every render - each
   // viewer arrow key, every dialog toggle - but TanStack Query keeps unchanged
@@ -76,7 +82,13 @@ export function PhotoGrid({
   if (photos !== stablePhotos && !haveSameItems(photos, stablePhotos)) {
     setStablePhotos(photos);
   }
-  const groups = useMemo(() => groupByDay(stablePhotos), [stablePhotos]);
+  const groups = useMemo(
+    () =>
+      groupByDate
+        ? groupByDay(stablePhotos)
+        : [{ key: "ranked", heading: null as string | null, items: stablePhotos }],
+    [stablePhotos, groupByDate],
+  );
 
   // Pages pass inline handlers; stable wrappers that call the latest ones
   // keep them from defeating the grids' memoization.
@@ -132,9 +144,11 @@ export function PhotoGrid({
                 bar + hairline border) at every breakpoint. Sticking at 60px tucks
                 the heading a fraction under it (the header's z-20 wins) - top-16
                 left a 3px strip where scrolled photos showed through. */}
-            <h2 className="sticky top-[60px] z-10 -mx-1 bg-background/90 px-1 py-2 text-sm font-medium text-foreground backdrop-blur-sm">
-              {group.heading}
-            </h2>
+            {group.heading && (
+              <h2 className="sticky top-[60px] z-10 -mx-1 bg-background/90 px-1 py-2 text-sm font-medium text-foreground backdrop-blur-sm">
+                {group.heading}
+              </h2>
+            )}
             <JustifiedGrid
               photos={group.items}
               targetRowHeight={targetRowHeight}

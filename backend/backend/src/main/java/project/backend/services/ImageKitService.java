@@ -174,6 +174,38 @@ public class ImageKitService {
     }
 
 
+    /**
+     * A JPEG no larger than 1024px on its long edge, for sending to Gemini:
+     * smaller requests, faster answers, and every stored format (HEIC, TIFF,
+     * SVG...) arrives as something Gemini accepts.
+     */
+    public byte[] downloadForAnalysis(String sourceUrl) {
+        if (sourceUrl == null || sourceUrl.isBlank()) {
+            throw new ImageKitUploadException("Photo has no URL to analyze");
+        }
+        String url = stripQuery(sourceUrl) + "?tr=w-1024,h-1024,c-at_max,f-jpg";
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            String contentType = response.headers().firstValue("Content-Type").orElse("");
+            if (response.statusCode() >= 400 || !contentType.startsWith("image/")
+                    || response.body() == null || response.body().length == 0) {
+                throw new ImageKitUploadException(
+                        "Couldn't download the photo for analysis (HTTP " + response.statusCode() + ")");
+            }
+            return response.body();
+        } catch (IOException ex) {
+            throw new ImageKitUploadException("Couldn't download the photo for analysis", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ImageKitUploadException("Photo download was interrupted", ex);
+        }
+    }
+
     public String  buildThumbnailUrl(String filePath) {
         if (filePath == null || filePath.isBlank()) {
            return filePath;

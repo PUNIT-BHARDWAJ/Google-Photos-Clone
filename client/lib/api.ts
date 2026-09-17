@@ -61,6 +61,89 @@ export type Photo = {
   dateTaken: string | null;
   hasCameraData: boolean;
   hasGpsData: boolean;
+  // AI analysis (Gemini) - null/empty until the photo has been analyzed.
+  aiCaption: string | null;
+  aiTags: string[];
+  aiSceneType: string | null;
+  aiDominantColors: string[];
+  aiProcessedAt: string | null;
+  aiError: string | null;
+  /** An analysis is queued or running right now. */
+  aiPending: boolean;
+};
+
+export type PhotoSearchResponse = PageResponse<Photo> & {
+  /** Gemini re-ordered these results. */
+  aiRanked: boolean;
+  /** Why AI ranking wasn't used, when it was asked for. */
+  aiMessage: string | null;
+};
+
+export type AiConnection =
+  | "NOT_CONFIGURED"
+  | "UNKNOWN"
+  | "CONNECTED"
+  | "RATE_LIMITED"
+  | "INVALID_KEY"
+  | "MODEL_UNAVAILABLE"
+  | "ERROR";
+
+export type AiJob = {
+  running: boolean;
+  cancelRequested: boolean;
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  startedAt: string;
+  finishedAt: string | null;
+  message: string;
+};
+
+export type AiStatus = {
+  configured: boolean;
+  connection: AiConnection;
+  connectionMessage: string | null;
+  model: string;
+  totalPhotos: number;
+  analyzedPhotos: number;
+  failedPhotos: number;
+  pendingPhotos: number;
+  job: AiJob | null;
+  secondsPerPhoto: number;
+  estimatedSecondsRemaining: number;
+};
+
+export type TagCount = {
+  tag: string;
+  count: number;
+};
+
+export type EditOperation = {
+  key: string;
+  label: string;
+  note: string | null;
+};
+
+export type EditSuggestion = {
+  instruction: string;
+  suggestion: string | null;
+  aiGenerated: boolean;
+  aiMessage: string | null;
+  operations: EditOperation[];
+  transformChain: string | null;
+  previewUrl: string | null;
+};
+
+export type AlbumSuggestion = {
+  id: string;
+  kind: "SCENE" | "TAG" | "DATE";
+  suggestedName: string;
+  photoIds: string[];
+  coverPhotoId: string;
+  previewThumbnailUrls: string[];
+  photoCount: number;
+  reason: string;
 };
 
 export type PhotoMetadata = {
@@ -385,14 +468,15 @@ export const api = {
 
     toggleStar: (id: string) => request<Photo>(`/photos/${id}/star`, { method: "PUT" }),
 
-    search: (params: { q: string; status?: PhotoStatus; page?: number; size?: number }) => {
+    search: (params: { q: string; ai?: boolean; status?: PhotoStatus; page?: number; size?: number }) => {
       const query = new URLSearchParams({
         q: params.q,
         status: params.status ?? "ACTIVE",
+        ai: String(params.ai ?? false),
         page: String(params.page ?? 0),
         size: String(params.size ?? 60),
       });
-      return request<PageResponse<Photo>>(`/photos/search?${query.toString()}`);
+      return request<PhotoSearchResponse>(`/photos/search?${query.toString()}`);
     },
 
     upload: (file: File) => {
@@ -433,6 +517,20 @@ export const api = {
         body: JSON.stringify(body),
       }),
 
+    aiAnalyze: (photoId: string) => request<Photo>(`/photos/${photoId}/ai/analyze`, { method: "POST" }),
+
+    aiSuggestEdit: (photoId: string, instruction: string) =>
+      request<EditSuggestion>(`/photos/${photoId}/ai/suggest-edit`, {
+        method: "POST",
+        body: JSON.stringify({ instruction }),
+      }),
+
+    aiSaveEdit: (photoId: string, operations: string[]) =>
+      request<Photo>(`/photos/${photoId}/ai/save-edit`, {
+        method: "POST",
+        body: JSON.stringify({ operations }),
+      }),
+
     share: (photoId: string, expiryDays?: number) =>
       request<SharedLink>(`/photos/${photoId}/share`, {
         method: "POST",
@@ -440,8 +538,24 @@ export const api = {
       }),
   },
 
+  ai: {
+    status: (refresh = false) => request<AiStatus>(`/photos/ai/status?refresh=${refresh}`),
+
+    analyzeAll: () =>
+      request<{ queued: number; message: string }>("/photos/ai/analyze-all", { method: "POST" }),
+
+    cancelAnalyzeAll: () => request<AiStatus>("/photos/ai/analyze-all/cancel", { method: "POST" }),
+
+    topTags: (limit = 8) => request<TagCount[]>(`/photos/ai/top-tags?limit=${limit}`),
+  },
+
   albums: {
     list: () => request<Album[]>("/albums"),
+
+    suggestions: (timeZone?: string) =>
+      request<AlbumSuggestion[]>(
+        `/albums/suggestions${timeZone ? `?tz=${encodeURIComponent(timeZone)}` : ""}`,
+      ),
 
     create: (body: { title: string }) =>
       request<Album>("/albums", { method: "POST", body: JSON.stringify(body) }),

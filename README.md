@@ -1,6 +1,6 @@
 # 📸 Google Photos Clone
 
-A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js 16**: Google OAuth2 sign-in, EXIF metadata extraction, a justified photo grid, drag-and-drop uploads, public share links, ImageKit-powered AI edits, fluid animations and a WCAG-audited dark mode.
+A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js 16**: Google OAuth2 sign-in, EXIF metadata extraction, a justified photo grid, drag-and-drop uploads, public share links, **Google Gemini** captions, tags, semantic search and smart album suggestions, ImageKit-powered edits, fluid animations and a WCAG-audited dark mode.
 
 <p align="center">
   <img src="screenshots/hero-light.jpg" alt="Photo library in light mode" width="49%">
@@ -15,8 +15,18 @@ A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js
 - **Photo library**: upload, star, archive, trash, restore and permanently delete, with bulk selection for every action
 - **Justified grid**: rows that fill the full width while preserving each photo's aspect ratio, grouped by day, with infinite scroll
 - **Albums**: create albums, add or remove photos, and pick a cover photo
-- **Search**: case-insensitive search across file names
+- **Search**: case-insensitive search across file names, AI captions and AI tags
 - **Favorites**: star photos from the grid or the viewer and browse them on their own page
+
+### AI features (Google Gemini, optional)
+- **Auto-tagging**: every upload gets a one-sentence caption, 5–15 tags, a scene type and its dominant colors, analyzed in the background after the upload finishes
+- **Semantic search**: "beach" finds photos tagged beach whatever their file names; turn on **AI Search** and Gemini ranks descriptive queries like "sunset over the sea" by relevance, using captions and tags only
+- **Search suggestions**: "Try" chips built from your most common tags
+- **Describe an edit**: type "make it look vintage" or tap an example; Gemini suggests how, the app maps it to instant ImageKit transformations, and you get a before/after preview to save as a new photo
+- **Smart album suggestions**: albums proposed from shared scenes, shared tags (5+ photos) and bursts of 10+ photos taken within two hours, each one click to create or dismiss
+- **AI insights** in the info panel: caption, clickable tags, scene and color swatches, with Analyze and Retry
+- **Library analysis** from Settings: analyze every photo with live progress, a time estimate and a Stop button, paced for Gemini's free tier
+- **Optional by design**: without a key every AI feature switches off cleanly and the rest of the app works exactly as before
 
 ### Authentication & Security
 - **Google OAuth2**: one-click "Continue with Google" sign-in that issues the app's own tokens
@@ -36,7 +46,7 @@ A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js
 - **Multi-file uploads** with per-file progress, retry and a progress ring on the upload button
 - **Validation** by MIME type with a file-extension fallback (JPEG, PNG, GIF, WebP, HEIC/HEIF, BMP, TIFF, SVG; up to 50 MB)
 - **EXIF metadata**: camera, lens settings, GPS location and capture date, shown in the viewer's info panel (press **I**)
-- **AI edits** via ImageKit: remove or change backgrounds, generative fill, smart and object-aware crops, retouch and upscale, saved as a new copy
+- **AI transforms** via ImageKit: remove or change backgrounds, generative fill, smart and object-aware crops, retouch and upscale, saved as a new copy
 - **ImageKit import**: bring existing assets from your ImageKit library into the app
 
 ### UI/UX & Polish
@@ -58,6 +68,7 @@ A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js
 | **Spring Data JPA / Hibernate** | Persistence |
 | **PostgreSQL 16** | Database (Docker Compose for local development) |
 | **ImageKit Java SDK** | Image storage, transformations and AI edits |
+| **Google Gemini API** (REST) | Photo captions and tags, search ranking, edit suggestions |
 | **metadata-extractor** | EXIF parsing |
 | **JJWT** | Token signing and validation |
 
@@ -128,6 +139,7 @@ A full-featured Google Photos clone built with **Spring Boot 4.1** and **Next.js
 - **Docker** (for the bundled PostgreSQL) or your own **PostgreSQL 16**
 - An **[ImageKit](https://imagekit.io)** account (the free tier works)
 - A **Google Cloud** OAuth 2.0 client (only needed for "Continue with Google")
+- A **Google Gemini** API key (optional, free; only needed for the AI features)
 
 ### 1. Clone the repository
 ```bash
@@ -156,6 +168,9 @@ app.jwt.secret=replace-with-a-long-random-secret
 # Google OAuth2 (optional)
 spring.security.oauth2.client.registration.google.client-id=your-client-id.apps.googleusercontent.com
 spring.security.oauth2.client.registration.google.client-secret=your-client-secret
+
+# Google Gemini (optional) - enables captions, tags, AI search and edit suggestions
+gemini.api-key=your-gemini-api-key
 ```
 
 Every value can also come from an environment variable instead:
@@ -165,6 +180,8 @@ Every value can also come from an environment variable instead:
 | `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_URL_ENDPOINT` | required |
 | `JWT_SECRET` | an insecure placeholder; always set it |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | placeholders (Google sign-in disabled) |
+| `GEMINI_API_KEY` | `placeholder` (AI features disabled) |
+| `GEMINI_MODEL` | `gemini-2.0-flash` |
 | `DB_USERNAME`, `DB_PASSWORD` | `postgres` / `postgres` |
 | `OAUTH2_FRONTEND_REDIRECT_URI` | `http://localhost:3000` |
 | `REQUEST_LOG_LEVEL` | `INFO` (`DEBUG` logs every request) |
@@ -175,6 +192,17 @@ Every value can also come from an environment variable instead:
 3. Add the authorized redirect URI `http://localhost:8080/login/oauth2/code/google`.
 4. Add the authorized JavaScript origin `http://localhost:3000`.
 5. Copy the client ID and secret into `application-local.properties`.
+
+#### AI features (optional)
+1. Open [Google AI Studio](https://aistudio.google.com/apikey), sign in and click **Create API key**. The free tier is enough for a personal library.
+2. Add `gemini.api-key=YOUR_KEY` to `application-local.properties`, or set the `GEMINI_API_KEY` environment variable. Never commit the key.
+3. Restart the backend. **Settings → AI Features** should show **Connected**.
+4. Click **Analyze all photos** there to tag photos uploaded before the key was added. New uploads are analyzed automatically.
+
+Good to know:
+- Requests are limited to 15 per minute (the free tier), with bulk analysis spaced 4 seconds apart and automatic retries with backoff when Gemini returns 429. Tune `gemini.requests-per-minute`, `gemini.bulk-delay-ms`, `gemini.timeout-seconds` and `gemini.max-retries` if your quota differs.
+- If Google has retired the configured model, the backend switches to `gemini.fallback-model` (`gemini-flash-latest`) and logs a warning. Set `GEMINI_MODEL` to pin a different one.
+- Only a 1024px JPEG copy of each photo is sent for analysis. AI search sends captions and tags, never images.
 
 ### 4. Run the backend
 ```bash
@@ -209,7 +237,7 @@ Google-Photos-Clone/
 │   │   ├── exception/               # Custom exceptions + global JSON error handling
 │   │   ├── repository/              # Spring Data JPA repositories
 │   │   ├── security/                # JWT filter, OAuth2 success handler
-│   │   └── services/                # Business logic (photos, EXIF extraction, sharing, ImageKit, ...)
+│   │   └── services/                # Business logic (photos, EXIF, sharing, ImageKit, Gemini analysis, search, album suggestions, ...)
 │   └── src/test/                    # Unit and context tests
 │
 ├── client/                          # Next.js 16 frontend
@@ -251,7 +279,7 @@ All endpoints are under `/api`, return JSON, and report errors as `{ "error": ..
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/api/photos?status=&starred=&page=&size=` | 🔒 | List photos (active, archived or trashed; optionally starred) |
-| GET | `/api/photos/search?q=` | 🔒 | Search by file name |
+| GET | `/api/photos/search?q=&ai=` | 🔒 | Search file names, AI captions and tags; `ai=true` has Gemini rank descriptive (3+ word) queries |
 | GET | `/api/photos/{id}` | 🔒 | Get a photo |
 | GET | `/api/photos/{id}/metadata` | 🔒 | Full EXIF metadata |
 | POST | `/api/photos/upload` | 🔒 | Upload a photo (multipart) |
@@ -264,6 +292,18 @@ All endpoints are under `/api`, return JSON, and report errors as `{ "error": ..
 | DELETE | `/api/photos/{id}` | 🔒 | Permanently delete one photo |
 | POST | `/api/photos/{id}/ai/preview` | 🔒 | Preview an AI edit |
 | POST | `/api/photos/{id}/ai/apply` | 🔒 | Save an AI edit as a new photo |
+
+### AI (Gemini)
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/photos/{id}/ai/analyze` | 🔒 | Analyze (or re-analyze) one photo and return it with its AI data |
+| POST | `/api/photos/ai/analyze-all` | 🔒 | Start analyzing every unanalyzed photo in the background; returns `{ queued, message }` at once |
+| POST | `/api/photos/ai/analyze-all/cancel` | 🔒 | Stop the running bulk analysis |
+| GET | `/api/photos/ai/status?refresh=` | 🔒 | Gemini connection, analysis progress and the current bulk run |
+| GET | `/api/photos/ai/top-tags?limit=` | 🔒 | Most common AI tags |
+| POST | `/api/photos/{id}/ai/suggest-edit` | 🔒 | Gemini's suggestion for a described edit, with an ImageKit preview URL |
+| POST | `/api/photos/{id}/ai/save-edit` | 🔒 | Render the suggested ImageKit edit and save it as a new photo |
+| GET | `/api/albums/suggestions?tz=` | 🔒 | Album suggestions from scenes, tags and date bursts (no Gemini call) |
 
 ### Albums
 | Method | Endpoint | Auth | Description |
@@ -300,7 +340,8 @@ All endpoints are under `/api`, return JSON, and report errors as `{ "error": ..
 ## 🧪 Testing & Quality
 
 ```bash
-# Backend: unit tests plus a Spring context test (needs PostgreSQL running and the ImageKit settings)
+# Backend: unit tests plus a Spring context test (needs PostgreSQL running and the ImageKit settings).
+# The Gemini tests run against a local fake server, so no API key is needed.
 cd backend/backend
 ./mvnw test
 
@@ -321,6 +362,8 @@ npm run build
 - **Resilient token refresh**: only a definite rejection signs the user out; network failures retry with backoff.
 - **Privacy-first sharing**: public DTOs are deliberately minimal, with no GPS coordinates, internal IDs or owner details.
 - **Secrets stay out of git**: all credentials come from the environment or a git-ignored local file.
+- **AI as an enhancement**: Gemini analysis runs after the upload transaction commits, on background threads, so uploads never wait for it. Every AI field is nullable, responses are parsed defensively (code fences, renamed fields, out-of-vocabulary values), and a missing, invalid or rate-limited key degrades to the plain app with a clear status instead of errors.
+- **Edits are URL transformations**: "describe an edit" never generates pixels with AI. Gemini only picks from a fixed list of operations, which map to ImageKit URL parameters: instant, free and reproducible. ImageKit has no brightness, saturation or sepia parameter, so "brighter", "vintage" and "sepia" are approximated with semi-transparent gradient overlays, and the UI says so.
 
 ---
 
@@ -335,5 +378,6 @@ npm run build
 - [Google Photos](https://photos.google.com), for design inspiration
 - [shadcn/ui](https://ui.shadcn.com) and [Base UI](https://base-ui.com), for accessible components
 - [ImageKit](https://imagekit.io), for image hosting, transformations and AI edits
+- [Google Gemini](https://ai.google.dev), for photo analysis and search ranking
 - [Framer Motion](https://motion.dev), for animations
 - Sample photos in the screenshots: [Unsplash](https://unsplash.com) photographers, via [Lorem Picsum](https://picsum.photos)

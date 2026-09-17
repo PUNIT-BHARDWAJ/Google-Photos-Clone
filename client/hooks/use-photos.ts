@@ -22,12 +22,12 @@ export function usePhotos(status: PhotoStatus, starred?: boolean) {
   });
 }
 
-export function useSearchPhotos(query: string) {
+export function useSearchPhotos(query: string, ai = false) {
   const trimmed = query.trim();
 
   return useInfiniteQuery({
-    queryKey: photoKeys.search(trimmed),
-    queryFn: ({ pageParam }) => api.photos.search({ q: trimmed, page: pageParam, size: PAGE_SIZE }),
+    queryKey: photoKeys.search(trimmed, ai),
+    queryFn: ({ pageParam }) => api.photos.search({ q: trimmed, ai, page: pageParam, size: PAGE_SIZE }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
     enabled: trimmed.length > 0,

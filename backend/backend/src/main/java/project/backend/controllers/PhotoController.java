@@ -28,6 +28,8 @@ import project.backend.dto.CreatePhotoRequest;
 import project.backend.dto.PageResponse;
 import project.backend.dto.PhotoMetadataResponse;
 import project.backend.dto.PhotoResponse;
+import project.backend.dto.PhotoSearchResponse;
+import project.backend.services.PhotoSearchService;
 import project.backend.services.PhotoService;
 import project.backend.services.UserService;
 
@@ -36,10 +38,12 @@ import project.backend.services.UserService;
 
 public class PhotoController {
     private final PhotoService photoService;
+    private final PhotoSearchService photoSearchService;
     private final UserService userService;
 
-    public PhotoController(PhotoService photoService, UserService userService) {
+    public PhotoController(PhotoService photoService, PhotoSearchService photoSearchService, UserService userService) {
         this.photoService = photoService;
+        this.photoSearchService = photoSearchService;
         this.userService = userService;
     }
     @GetMapping("/photos/{id}")
@@ -88,22 +92,20 @@ public class PhotoController {
         return ResponseEntity.ok(photoService.toggleStar(user, id));
     }
 
+    // Matches file names, AI captions and AI tags; ai=true additionally has
+    // Gemini re-rank descriptive (3+ word) queries.
     @GetMapping("/photos/search")
-    public ResponseEntity<PageResponse<PhotoResponse>> searchPhotos(
+    public ResponseEntity<PhotoSearchResponse> searchPhotos(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam String q,
             @RequestParam(defaultValue = "ACTIVE") PhotoStatus status,
+            @RequestParam(defaultValue = "false") boolean ai,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "24") int size
     ) {
         User user = userService.getByEmail(userDetails.getUsername());
-        PageResponse<PhotoResponse> photos = photoService.searchPhotos(
-                user,
-                q,
-                status,
-                PageRequest.of(page, size)
-        );
-        return ResponseEntity.ok(photos);
+        return ResponseEntity.ok(photoSearchService.search(
+                user, q, status, ai, Math.max(0, page), Math.clamp(size, 1, 100)));
     }
 
     @PostMapping(value = "/photos/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

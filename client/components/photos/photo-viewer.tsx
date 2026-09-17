@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { RiArrowLeftSLine, RiArrowRightSLine, RiCloseLine, RiMagicLine } from "@remixicon/react";
 import { Info, Share2 } from "lucide-react";
@@ -15,6 +16,7 @@ import { formatPhotoDate, getPhotoDate } from "@/lib/format";
 import { getViewerPreviewSrc } from "@/lib/imagekit";
 import { cn } from "@/lib/utils";
 import type { Photo } from "@/lib/api";
+import { searchHref } from "@/lib/search";
 
 // Shortcuts must never fire while the user is typing or driving a widget that
 // owns its own arrow keys (select listboxes, menus, sliders, tabs, radios).
@@ -140,6 +142,7 @@ export function PhotoViewer({
   const [direction, setDirection] = useState(1);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const toggleStar = useToggleStar();
+  const router = useRouter();
 
   // The one path for prev/next - keys, buttons and swipes all go through it,
   // so the slide direction always matches what happened.
@@ -342,7 +345,16 @@ export function PhotoViewer({
         targetId={photo.id}
         targetTitle={photo.fileName}
       />
-      <PhotoInfoPanel photo={photo} open={infoOpen} onOpenChange={setInfoOpen} />
+      <PhotoInfoPanel
+        photo={photo}
+        open={infoOpen}
+        onOpenChange={setInfoOpen}
+        onSearchTag={(tag) => {
+          setInfoOpen(false);
+          onOpenChange(false);
+          router.push(searchHref(tag));
+        }}
+      />
     </Dialog>
   );
 }

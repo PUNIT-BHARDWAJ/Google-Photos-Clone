@@ -1,5 +1,7 @@
 package project.backend.repository;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -7,12 +9,15 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import project.backend.domain.Photo;
 import project.backend.domain.PhotoStatus;
 
-public interface PhotoRepository extends JpaRepository<Photo, UUID> {
+public interface PhotoRepository extends JpaRepository<Photo, UUID>, JpaSpecificationExecutor<Photo> {
 
     // Timeline order: when the photo was taken, falling back to when it was
     // uploaded - the same date the frontend groups day headings by. Ordering
@@ -39,22 +44,6 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
     """)
     Page<Photo> findTimelineByStarred(UUID userId, PhotoStatus status, boolean starred, Pageable pageable);
 
-    // `pattern` is a lowercase LIKE pattern with %, _ and \ already escaped.
-    // Matches the stored ImageKit name or the original upload name.
-    @Query(value = """
-        SELECT p FROM Photo p
-        WHERE p.user.id = :userId AND p.status = :status
-          AND (LOWER(p.fileName) LIKE :pattern ESCAPE '\\'
-               OR LOWER(p.originalFileName) LIKE :pattern ESCAPE '\\')
-        ORDER BY COALESCE(p.metadata.dateTaken, p.createdAt) DESC, p.createdAt DESC, p.id DESC
-    """, countQuery = """
-        SELECT COUNT(p) FROM Photo p
-        WHERE p.user.id = :userId AND p.status = :status
-          AND (LOWER(p.fileName) LIKE :pattern ESCAPE '\\'
-               OR LOWER(p.originalFileName) LIKE :pattern ESCAPE '\\')
-    """)
-    Page<Photo> searchTimeline(UUID userId, PhotoStatus status, String pattern, Pageable pageable);
-
     List<Photo> findByIdInAndUserId(List<UUID> ids, UUID userId);
     Optional<Photo> findByIdAndUserId(UUID id, UUID userId);
 
@@ -74,4 +63,44 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
     default long sumActivePhotoBytesByUserId(UUID userId) {
         return sumActivePhotoBytesByUserId(userId, PhotoStatus.ACTIVE);
     }
+
+    // ---- AI analysis ----
+
+    // Newest first, so a bulk run fills in the photos the user sees first.
+    @Query("""
+        SELECT p.id FROM Photo p
+        WHERE p.user.id = :userId AND p.status IN :statuses AND p.aiProcessedAt IS NULL
+        ORDER BY COALESCE(p.metadata.dateTaken, p.createdAt) DESC, p.createdAt DESC, p.id DESC
+    """)
+    List<UUID> findIdsNeedingAiAnalysis(UUID userId, Collection<PhotoStatus> statuses);
+
+    long countByUserIdAndStatusIn(UUID userId, Collection<PhotoStatus> statuses);
+
+    long countByUserIdAndStatusInAndAiProcessedAtIsNotNull(UUID userId, Collection<PhotoStatus> statuses);
+
+    long countByUserIdAndStatusInAndAiProcessedAtIsNullAndAiErrorIsNotNull(UUID userId, Collection<PhotoStatus> statuses);
+
+    // Targeted updates rather than save(): analysis runs for seconds on a
+    // background thread, and saving a stale entity would undo anything the
+    // user changed meanwhile (starring, archiving, trashing).
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        UPDATE Photo p
+        SET p.aiCaption = :caption, p.aiTags = :tags, p.aiSceneType = :sceneType,
+            p.aiDominantColors = :dominantColors, p.aiProcessedAt = :processedAt, p.aiError = NULL
+        WHERE p.id = :photoId
+    """)
+    int saveAiAnalysis(UUID photoId, String caption, String tags, String sceneType, String dominantColors, Instant processedAt);
+
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Photo p SET p.aiError = :error WHERE p.id = :photoId")
+    int saveAiError(UUID photoId, String error);
+
+    @Query("""
+        SELECT p.aiTags FROM Photo p
+        WHERE p.user.id = :userId AND p.status = :status AND p.aiTags IS NOT NULL
+    """)
+    List<String> findAiTags(UUID userId, PhotoStatus status);
 }

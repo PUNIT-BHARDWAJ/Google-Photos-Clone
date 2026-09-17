@@ -12,6 +12,7 @@ import { ThemeSelector } from "@/components/ui/mode-toggle";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorState } from "@/components/layout/error-state";
+import { AiFeaturesCard } from "@/components/settings/ai-features-card";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useStorageUsage } from "@/hooks/use-library";
 import { useChangePassword, useUpdateProfile } from "@/hooks/use-user";
@@ -73,7 +74,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your account and storage</p>
+        <p className="text-sm text-muted-foreground">Manage your account, storage and AI features</p>
       </div>
 
       <div className="space-y-6">
@@ -169,6 +170,8 @@ export default function SettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        <AiFeaturesCard />
 
         <Card>
           <CardHeader>

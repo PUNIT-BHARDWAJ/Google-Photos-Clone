@@ -99,3 +99,33 @@ export function getTileImageSources(
   const twoX = withHeightTransform(url, snapHeight(displayHeight * 2));
   return { src: oneX, srcSet: `${oneX} 1x, ${twoX} 2x` };
 }
+
+const EDIT_COMPARISON_HEIGHT = 640;
+
+/**
+ * Before/after renditions for the AI edit dialog, both capped at the same
+ * height so they compare fairly and neither downloads a full-size original.
+ * The resize is chained after the edit, so crops are still cut from the
+ * full-resolution photo.
+ */
+export function getEditComparisonSources(
+  photo: Pick<Photo, "url" | "mimeType">,
+  previewUrl: string,
+): { before: string; after: string } {
+  const original = transformableUrl(photo);
+  let after = previewUrl;
+  try {
+    const url = new URL(previewUrl);
+    const chain = url.searchParams.get("tr");
+    if (chain && isImageKitUrl(url)) {
+      url.searchParams.set("tr", `${chain}:h-${EDIT_COMPARISON_HEIGHT},f-auto`);
+      after = url.toString();
+    }
+  } catch {
+    // Not a URL we can adjust - show it as the server built it.
+  }
+  return {
+    before: original ? withHeightTransform(original, EDIT_COMPARISON_HEIGHT) : photo.url,
+    after,
+  };
+}
