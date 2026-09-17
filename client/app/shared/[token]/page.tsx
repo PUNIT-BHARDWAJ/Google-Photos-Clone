@@ -48,8 +48,12 @@ function SharedStateMessage({
 
 function SharedPhotoView({ photo }: { photo: PublicPhoto }) {
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
+    // A fixed viewport-height column: the photo's area gets a definite height
+    // (flex-1 with min-h-0), so max-h-full actually contains the photo. With
+    // min-h-screen the percentage never resolved and a landscape photo on a
+    // desktop screen ran past the fold, pushing its name and footer below it.
+    <div className="flex h-dvh flex-col bg-background text-foreground">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo.url} alt={photo.fileName} className="max-h-full max-w-full rounded-lg object-contain ring-1 ring-foreground/10" />
       </div>
