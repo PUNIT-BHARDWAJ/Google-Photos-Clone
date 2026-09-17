@@ -1,0 +1,68 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Local secrets - never commit these ###
+application-local.properties
+*.env
+.env
+.env.local
+.env*.local
+.env*
+client_secret_*.json
+*.pem
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Playwright MCP (browser verification screenshots, snapshots, logs) ###
+.playwright-mcp/
+
+### Backend build output ###
+backend/**/target/
+backend/**/*.jar
+*.log
+
+### Frontend ###
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+### Build output ###
+dist/
+
+### OS files ###
+.DS_Store
+Thumbs.db
+
+### Claude Code local state ###
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
