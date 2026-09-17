@@ -49,72 +49,87 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.147 0.004 49.25);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.147 0.004 49.25);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.488 0.243 264.376);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0.001 106.424);
-  --muted-foreground: oklch(0.553 0.013 58.071);
-  --accent: oklch(0.97 0.001 106.424);
-  --accent-foreground: oklch(0.216 0.006 56.043);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.923 0.003 48.717);
-  --input: oklch(0.923 0.003 48.717);
-  --ring: oklch(0.709 0.01 56.259);
+  /* Light: white canvas, near-black text, Google blue. Values were checked
+     for WCAG AA - text pairs below 4.5:1 were darkened from the starting
+     palette (muted-foreground on muted surfaces, destructive on its tint). */
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #1a73e8;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #404040;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b6b6b;
+  --accent: #f0f0f0;
+  --accent-foreground: #0a0a0a;
+  --destructive: #c62828;
+  --border: #e5e5e5;
+  --input: #d9d9d9;
+  --ring: #1a73e8;
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.875rem;
-  --sidebar: oklch(0.985 0.001 106.423);
-  --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.97 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-border: oklch(0.923 0.003 48.717);
-  --sidebar-ring: oklch(0.709 0.01 56.259);
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #1a73e8;
+  --sidebar-primary-foreground: #ffffff;
+  /* Active nav item: a blue tint with a deeper blue label (Google's own
+     pairing) - plain primary on a gray accent is only 3.9:1. */
+  --sidebar-accent: #e8f0fe;
+  --sidebar-accent-foreground: #1967d2;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #1a73e8;
+  /* Scrollbar and text-selection colors, per theme. */
+  --scrollbar-thumb: #c4c4c4;
+  --scrollbar-thumb-hover: #a3a3a3;
+  --selection: color-mix(in oklab, var(--primary) 20%, transparent);
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.216 0.006 56.043);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.424 0.199 265.638);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.268 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
-  --accent: oklch(0.268 0.007 34.298);
-  --accent-foreground: oklch(0.985 0.001 106.423);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.553 0.013 58.071);
+  /* Dark: true black canvas with neutral (untinted) grays. Primary is a
+     lighter blue so it reads on black; it carries dark text. */
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #171717;
+  --popover-foreground: #fafafa;
+  --primary: #4da6ff;
+  --primary-foreground: #0a0a0a;
+  --secondary: #262626;
+  --secondary-foreground: #a3a3a3;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  /* Hover/highlight surface - #1a1a1a vanished against #171717 cards. */
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #f87171;
+  --border: #2e2e2e;
+  --input: #3a3a3a;
+  --ring: #4da6ff;
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.216 0.006 56.043);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.268 0.007 34.298);
-  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.553 0.013 58.071);
+  --sidebar: #0f0f0f;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #4da6ff;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #182633;
+  --sidebar-accent-foreground: #4da6ff;
+  --sidebar-border: #262626;
+  --sidebar-ring: #4da6ff;
+  --scrollbar-thumb: #404040;
+  --scrollbar-thumb-hover: #525252;
+  --selection: color-mix(in oklab, var(--primary) 30%, transparent);
 }
 
 @layer base {
@@ -135,6 +150,70 @@
        a dialog animates open/closed; with it already stable the lock is free.
        Also keeps the layout from shifting between scrolling and short pages. */
     scrollbar-gutter: stable;
+  }
+  ::selection {
+    background-color: var(--selection);
+    color: var(--foreground);
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Theme                                                                    */
+/* ------------------------------------------------------------------------ */
+
+/* Dark scrollbars. scrollbar-color is the standard property (Chrome 121+,
+   Firefox); Safari only understands the ::-webkit-scrollbar pseudo-elements,
+   which Chrome ignores once scrollbar-color is set. Light keeps the native
+   scrollbar. */
+.dark {
+  scrollbar-color: var(--scrollbar-thumb) var(--background);
+}
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: var(--background);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* The public /shared/[token] page is always dark, whatever the visitor's
+   theme: its wrapper carries .dark for the tokens, and this paints the
+   canvas, native controls and scrollbar around it to match. */
+html:has([data-fixed-theme="dark"]) {
+  color-scheme: dark;
+  background-color: #0a0a0a;
+  scrollbar-color: #404040 #0a0a0a;
+}
+html:has([data-fixed-theme="dark"]) body {
+  background-color: #0a0a0a;
+}
+
+/* Theme switches cross-fade colors for 200ms. ThemeTransition adds
+   .theme-transition to <html> only while the theme is actually changing (a
+   toggle, or the OS theme under "System"), so first paint and ordinary
+   renders never animate. Every element shares one timing - otherwise
+   components with their own transition-colors would lag behind the page.
+   Photos are excluded so they don't flicker, and reduced motion skips it. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition-property:
+      background-color, border-color, color, fill, stroke, outline-color, text-decoration-color, box-shadow !important;
+    transition-duration: 200ms !important;
+    transition-timing-function: ease !important;
+    transition-delay: 0s !important;
+  }
+  html.theme-transition :is(img, video, canvas) {
+    transition: none !important;
   }
 }
 

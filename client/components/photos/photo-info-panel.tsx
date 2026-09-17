@@ -55,7 +55,7 @@ export function PhotoInfoPanel({ photo, open, onOpenChange }: PhotoInfoPanelProp
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContent className="bg-card text-card-foreground">
         <SheetHeader>
           <SheetTitle>Photo info</SheetTitle>
         </SheetHeader>

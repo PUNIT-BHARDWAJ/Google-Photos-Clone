@@ -63,6 +63,28 @@ export function getViewerPreviewSrc(photo: Pick<Photo, "url" | "mimeType">): str
 }
 
 /**
+ * A square, center-cropped rendition for square thumbnail slots (album covers,
+ * link previews, picker grids). The library thumbnail ImageKit stores
+ * letterboxes wide photos onto a white square - invisible on a white page, but
+ * white bars around the photo in dark mode. Any path transform is dropped in
+ * favor of an exact crop. Non-ImageKit URLs are returned unchanged.
+ */
+export function getSquareThumbnailSrc(src: string, size = 400): string {
+  try {
+    const url = new URL(src);
+    if (!url.hostname.endsWith("ik.imagekit.io")) return src;
+    url.pathname = url.pathname
+      .split("/")
+      .filter((segment) => !segment.startsWith("tr:"))
+      .join("/");
+    url.searchParams.set("tr", `w-${size},h-${size},c-maintain_ratio,fo-auto,f-auto`);
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
+
+/**
  * `src`/`srcSet` for a grid tile rendered `displayHeight` CSS pixels tall:
  * a 1x rendition plus a 2x one for high-DPI screens.
  */

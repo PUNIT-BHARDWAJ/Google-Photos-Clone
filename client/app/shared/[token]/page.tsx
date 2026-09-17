@@ -6,6 +6,7 @@ import { RiErrorWarningLine, RiTimeLine } from "@remixicon/react";
 import { Spinner } from "@/components/ui/spinner";
 import { useSharedAlbum, useSharedPhoto } from "@/hooks/use-shared-links";
 import { isNetworkError, type PublicAlbum, type PublicPhoto } from "@/lib/api";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 
 function isExpiredError(error: unknown) {
   return error instanceof Error && error.message === "This link has expired";
@@ -13,7 +14,7 @@ function isExpiredError(error: unknown) {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/40">
+    <footer className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">
       Powered by Google Photos Clone
     </footer>
   );
@@ -31,13 +32,13 @@ function SharedStateMessage({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-white/10 text-white/60">
+        <div className="flex size-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
           {icon}
         </div>
         <h1 className="text-lg font-medium">{title}</h1>
-        <p className="text-sm text-white/60">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
         {action}
       </div>
       <Footer />
@@ -47,12 +48,12 @@ function SharedStateMessage({
 
 function SharedPhotoView({ photo }: { photo: PublicPhoto }) {
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo.url} alt={photo.fileName} className="max-h-full max-w-full object-contain" />
+        <img src={photo.url} alt={photo.fileName} className="max-h-full max-w-full rounded-lg object-contain ring-1 ring-foreground/10" />
       </div>
-      <p className="px-4 pb-2 text-center text-sm text-white/70">{photo.fileName}</p>
+      <p className="px-4 pb-2 text-center text-sm text-muted-foreground">{photo.fileName}</p>
       <Footer />
     </div>
   );
@@ -66,20 +67,20 @@ function SharedAlbumView({ album }: { album: PublicAlbum }) {
   }, [album.title]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="px-4 py-6 text-center">
         <h1 className="text-xl font-semibold">{album.title}</h1>
-        <p className="mt-1 text-sm text-white/60">
+        <p className="mt-1 text-sm text-muted-foreground">
           {album.photos.length} item{album.photos.length === 1 ? "" : "s"}
         </p>
       </header>
       <div className="flex-1 px-2 pb-6">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {album.photos.map((photo, index) => (
-            <div key={index} className="aspect-square overflow-hidden rounded-lg bg-white/5">
+            <div key={index} className="aspect-square overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photo.thumbnailUrl || photo.url}
+                src={getSquareThumbnailSrc(photo.thumbnailUrl || photo.url)}
                 alt={photo.fileName}
                 loading="lazy"
                 className="h-full w-full object-cover"
@@ -105,8 +106,8 @@ export default function SharedTokenPage() {
   const loading = photoQuery.isLoading || (tryAlbum && albumQuery.isLoading);
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <Spinner className="size-6 text-white/60" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
     );
   }
@@ -124,7 +125,7 @@ export default function SharedTokenPage() {
               photoQuery.refetch();
               if (albumQuery.isError) albumQuery.refetch();
             }}
-            className="mt-2 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+            className="mt-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Try again
           </button>

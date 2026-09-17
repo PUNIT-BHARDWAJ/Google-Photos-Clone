@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/provider/theme-provider";
 import QueryProvider from "@/components/provider/query-provider";
 import { MotionProvider } from "@/components/provider/motion-provider";
+import { ThemeTransition } from "@/components/provider/theme-transition";
 import { Toaster } from "@/components/ui/sonner";
 const raleway = Raleway({subsets:['latin'],variable:'--font-sans'});
 
@@ -34,6 +35,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Lets the browser paint its blank pre-load canvas dark for dark-OS users
+  // on a hard refresh. Once the page renders, next-themes sets color-scheme
+  // on <html> explicitly, so this never overrides the chosen theme.
+  colorScheme: "light dark",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
@@ -48,12 +53,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+      {/* next-themes injects its script ahead of the page content, so the
+          stored (or system) theme class is on <html> before first paint - no
+          flash. Theme changes cross-fade via ThemeTransition instead of
+          next-themes' disableTransitionOnChange, which cut every transition. */}
       <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
-            disableTransitionOnChange
           >
+            <ThemeTransition />
             <QueryProvider>
               <MotionProvider>{children}</MotionProvider>
             </QueryProvider>

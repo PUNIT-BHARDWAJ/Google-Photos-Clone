@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useAddPhotosToAlbum, useAlbums, useCreateAlbum } from "@/hooks/use-albums";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 
 type AddToAlbumDialogProps = {
   photoIds: string[];
@@ -102,7 +103,7 @@ export function AddToAlbumDialog({ photoIds, open, onOpenChange, onDone }: AddTo
               <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
                 {album.coverThumbnailUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={album.coverThumbnailUrl} alt="" className="h-full w-full object-cover" />
+                  <img src={getSquareThumbnailSrc(album.coverThumbnailUrl, 80)} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <RiFolderImageLine className="size-5 text-muted-foreground" />
                 )}

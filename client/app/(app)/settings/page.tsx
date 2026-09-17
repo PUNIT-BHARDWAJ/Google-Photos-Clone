@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { RiCloudLine, RiLockLine, RiUserLine } from "@remixicon/react";
+import { RiCloudLine, RiContrast2Line, RiLockLine, RiUserLine } from "@remixicon/react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ThemeSelector } from "@/components/ui/mode-toggle";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { ErrorState } from "@/components/layout/error-state";
@@ -124,6 +125,19 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RiContrast2Line className="size-4" />
+              Appearance
+            </CardTitle>
+            <CardDescription>Choose light, dark, or match your device&apos;s setting</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ThemeSelector />
           </CardContent>
         </Card>
 

@@ -72,7 +72,7 @@ export function AppShell({ children }: AppShellProps) {
       </Sheet>
 
       <div className="flex min-h-screen flex-col md:pl-64">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur-sm sm:px-6">
           {isMobile && (
             <Button
               variant="outline"

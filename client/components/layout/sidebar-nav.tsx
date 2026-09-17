@@ -63,17 +63,26 @@ function NavLink({
       onClick={onNavigate}
       aria-current={isActive ? "page" : undefined}
       className={cn(
+        // Active: primary label and icon on the accent highlight. Otherwise the
+        // label is near-foreground with a muted icon, and hovering brightens
+        // both over a faint neutral wash (not the accent, so hover never looks
+        // like a second active item).
         "group/nav relative flex items-center rounded-xl text-sm font-medium transition-colors",
         isActive
           ? "text-sidebar-accent-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+          : "text-sidebar-foreground/80 hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground",
       )}
     >
       {isActive && <ActiveHighlight />}
       {/* Press feedback scales the content, not the link: scaling the link
           would also scale the highlight while it measures its next position. */}
       <span className="relative flex w-full items-center gap-3 px-3 py-2.5 transition-[scale] duration-100 group-active/nav:scale-95">
-        <Icon className="size-4 shrink-0" />
+        <Icon
+          className={cn(
+            "size-4 shrink-0 transition-colors",
+            !isActive && "text-muted-foreground group-hover/nav:text-sidebar-foreground",
+          )}
+        />
         <span className="truncate">{label}</span>
       </span>
     </Link>
@@ -132,10 +141,18 @@ export function SidebarNav({ user, onNavigate }: SidebarNavProps) {
           />
 
           {user && (
-            <div className="rounded-xl bg-sidebar-accent/40 px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Signed in as</p>
-              <p className="truncate text-sm font-medium text-sidebar-foreground">{user.displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <div className="flex items-center gap-3 rounded-xl bg-sidebar-foreground/[0.04] px-3 py-2.5">
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-sidebar-accent-foreground ring-2 ring-sidebar-border"
+              >
+                {(user.displayName || user.email).trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Signed in as</p>
+                <p className="truncate text-sm font-medium text-sidebar-foreground">{user.displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
             </div>
           )}
 

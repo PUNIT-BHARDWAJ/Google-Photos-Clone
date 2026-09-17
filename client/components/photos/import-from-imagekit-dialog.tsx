@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useImageKitAssets, useImportAssets } from "@/hooks/use-library";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 import { cn } from "@/lib/utils";
 
 type ImportFromImageKitDialogProps = {
@@ -96,7 +97,7 @@ export function ImportFromImageKitDialog({ open, onOpenChange }: ImportFromImage
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={asset.thumbnailUrl || asset.url}
+                    src={getSquareThumbnailSrc(asset.thumbnailUrl || asset.url, 240)}
                     alt={asset.fileName}
                     loading="lazy"
                     className={cn("h-full w-full object-cover", isSelected && "scale-95")}

@@ -29,7 +29,7 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
       data-slot="sheet-overlay"
       className={cn(
         // Fades in step with the panel: 250ms in, 200ms out.
-        "fixed inset-0 z-50 bg-black/30 transition-opacity duration-250 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-ending-style:ease-in data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-sm",
+        "fixed inset-0 z-50 bg-black/80 transition-opacity duration-250 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-ending-style:ease-in data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-sm",
         className
       )}
       {...props}

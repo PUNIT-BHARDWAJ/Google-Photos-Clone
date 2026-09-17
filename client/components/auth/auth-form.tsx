@@ -42,12 +42,18 @@ function GoogleSignInButton() {
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      // Google's branding: a white button with a border in light mode, a blue
+      // one with white text in dark mode. #1a73e8 rather than #4285f4, which
+      // only reaches 3.6:1 against white text; the "G" sits on a white disc
+      // so its blue stays visible on the blue button.
+      className="w-full bg-white text-[#1f1f1f] hover:bg-[#f8f9fa] hover:text-[#1f1f1f] dark:border-transparent dark:bg-[#1a73e8] dark:text-white dark:hover:bg-[#1765cc] dark:hover:text-white"
       onClick={() => {
         window.location.href = googleLoginUrl;
       }}
     >
-      <GoogleIcon />
+      <span className="flex size-5 items-center justify-center rounded-full dark:bg-white">
+        <GoogleIcon />
+      </span>
       Continue with Google
     </Button>
   );

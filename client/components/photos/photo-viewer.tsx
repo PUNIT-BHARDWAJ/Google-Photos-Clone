@@ -63,7 +63,9 @@ function ViewerImage({ photo }: { photo: Photo }) {
 
   return (
     <div
-      className="relative"
+      // Faint hairline so a dark photo's edges don't dissolve into the black
+      // stage (the viewer is its own dark scope, so foreground is near-white).
+      className="relative ring-1 ring-foreground/10"
       style={{
         aspectRatio: `${width} / ${height}`,
         // Contain within the stage, and never upscale past the original.
@@ -204,7 +206,7 @@ export function PhotoViewer({
         // stage adds its own scale-from-0.9 below.
         overlayClassName="duration-200"
         animationClassName="duration-200 ease-out data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
-        className="group/viewer inset-0 top-0 left-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border-0 bg-black/95 p-0 text-white shadow-none ring-0 sm:max-w-none sm:grid-cols-[minmax(0,1fr)_auto] sm:grid-rows-[auto_minmax(0,1fr)]"
+        className="dark group/viewer inset-0 top-0 left-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border-0 bg-black/90 p-0 text-white shadow-none ring-0 sm:max-w-none sm:grid-cols-[minmax(0,1fr)_auto] sm:grid-rows-[auto_minmax(0,1fr)]"
       >
         <DialogTitle className="sr-only">{photo.fileName}</DialogTitle>
 

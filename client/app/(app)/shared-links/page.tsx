@@ -20,6 +20,7 @@ import { CopyLinkButton } from "@/components/sharing/copy-link-button";
 import { ErrorState } from "@/components/layout/error-state";
 import { useRevokeSharedLink, useSharedLinks } from "@/hooks/use-shared-links";
 import { formatPhotoDate } from "@/lib/format";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 import type { SharedLink } from "@/lib/api";
 
 export default function SharedLinksPage() {
@@ -61,12 +62,12 @@ export default function SharedLinksPage() {
           {links.map((link) => (
             <div
               key={link.id}
-              className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-2.5"
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border bg-card px-3 py-2.5"
             >
               <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
                 {link.targetThumbnailUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={link.targetThumbnailUrl} alt={link.targetTitle} className="h-full w-full object-cover" />
+                  <img src={getSquareThumbnailSrc(link.targetThumbnailUrl, 96)} alt={link.targetTitle} className="h-full w-full object-cover" />
                 ) : link.targetType === "ALBUM" ? (
                   <RiFolderImageLine className="size-5 text-muted-foreground" />
                 ) : (
@@ -74,26 +75,38 @@ export default function SharedLinksPage() {
                 )}
               </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-foreground">{link.targetTitle}</p>
+              {/* Title on its own line; the badges and date wrap beneath it, and
+                  the row wraps the copy/revoke buttons onto their own line when
+                  a phone is too narrow for both, instead of squeezing the title
+                  away. */}
+              <div className="min-w-40 flex-1 space-y-1">
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block truncate text-sm font-medium text-primary hover:underline"
+                >
+                  {link.targetTitle}
+                </a>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <Badge variant="outline">{link.targetType === "ALBUM" ? "Album" : "Photo"}</Badge>
+                  {/* The list only contains live links (expired ones are
+                      filtered server-side), so the status is about expiry. */}
+                  {link.expiresAt ? (
+                    <Badge className="bg-amber-500/15 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">
+                      Expires {formatPhotoDate(link.expiresAt)}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">No expiry</Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground">Created {formatPhotoDate(link.createdAt)}</span>
                 </div>
-                <p className="truncate text-xs text-muted-foreground">
-                  Created {formatPhotoDate(link.createdAt)} &middot;{" "}
-                  {link.expiresAt ? `Expires ${formatPhotoDate(link.expiresAt)}` : "Never expires"}
-                </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
                 <CopyLinkButton url={link.url} size="sm" />
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setRevokeTarget(link)}
-                >
+                <Button variant="destructive" size="sm" onClick={() => setRevokeTarget(link)}>
                   Revoke
                 </Button>
               </div>

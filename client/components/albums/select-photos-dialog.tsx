@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { usePhotos } from "@/hooks/use-photos";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 import { useAddPhotosToAlbum } from "@/hooks/use-albums";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +88,7 @@ export function SelectPhotosDialog({ albumId, open, onOpenChange }: SelectPhotos
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.thumbnailUrl || photo.url}
+                    src={getSquareThumbnailSrc(photo.thumbnailUrl || photo.url, 240)}
                     alt={photo.fileName}
                     loading="lazy"
                     className={cn("h-full w-full object-cover", isSelected && "scale-95")}

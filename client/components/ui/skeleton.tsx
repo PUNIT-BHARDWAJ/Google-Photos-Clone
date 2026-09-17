@@ -9,7 +9,7 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="skeleton"
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-muted after:absolute after:inset-0 after:-translate-x-full after:animate-shimmer after:bg-linear-to-r after:from-transparent after:via-foreground/10 after:to-transparent dark:after:via-white/10",
+        "relative overflow-hidden rounded-2xl bg-muted after:absolute after:inset-0 after:-translate-x-full after:animate-shimmer after:bg-linear-to-r after:from-transparent after:via-foreground/10 after:to-transparent",
         className
       )}
       {...props}

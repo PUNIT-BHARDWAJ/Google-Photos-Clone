@@ -46,7 +46,9 @@ export function SearchBar() {
         onChange={(event) => setValue(event.target.value)}
         placeholder="Search your photos"
         aria-label="Search photos"
-        className="pl-9 pr-9"
+        // A filled field that lightens when focused (white in light mode, a
+        // step up from the fill in dark), with the primary focus border.
+        className="border-transparent bg-secondary pl-9 pr-9 focus-visible:bg-background dark:focus-visible:bg-[color-mix(in_oklab,var(--secondary),var(--foreground)_6%)]"
       />
       {value && (
         <Button

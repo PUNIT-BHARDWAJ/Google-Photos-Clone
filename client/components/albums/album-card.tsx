@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RiFolderImageLine } from "@remixicon/react";
 import { Share2 } from "lucide-react";
 import { ShareDialog } from "@/components/sharing/share-dialog";
+import { getSquareThumbnailSrc } from "@/lib/imagekit";
 import type { Album } from "@/lib/api";
 
 type AlbumCardProps = {
@@ -17,11 +18,11 @@ export function AlbumCard({ album }: AlbumCardProps) {
   return (
     <div className="group/album relative">
       <Link href={`/albums/${album.id}`} className="block space-y-2">
-        <div className="aspect-square overflow-hidden rounded-2xl bg-muted">
+        <div className="aspect-square overflow-hidden rounded-2xl bg-muted dark:ring-1 dark:ring-foreground/10">
           {album.coverThumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={album.coverThumbnailUrl}
+              src={getSquareThumbnailSrc(album.coverThumbnailUrl)}
               alt={album.title}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-200 group-hover/album:scale-105"

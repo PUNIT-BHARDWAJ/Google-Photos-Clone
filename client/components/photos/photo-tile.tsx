@@ -68,7 +68,9 @@ export function PhotoTile({
         // Tailwind's hover variant only applies on devices that can hover -
         // taps on touch screens don't trigger a stuck "lifted" state.
         "group/tile relative h-full w-full overflow-hidden rounded-lg bg-muted select-none transition-[scale] duration-150 ease-out hover:scale-[1.02]",
-        selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+        // Dark mode gets a faint hairline so dark photos keep their edges
+        // against the black page; the selection ring replaces it.
+        selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "dark:ring-1 dark:ring-foreground/10",
       )}
     >
       {placeholderSrc && !placeholderDone && (
@@ -105,6 +107,22 @@ export function PhotoTile({
           loaded ? "opacity-100" : "opacity-0",
           selected ? "scale-95" : "group-hover/tile:brightness-105",
         )}
+      />
+
+      {/* Short scrims behind the white overlay controls so they stay legible
+          on light photos - top for the checkbox, bottom for the star. Same in
+          both themes: they darken the photo, not the page. Shown on hover;
+          selection mode keeps the top one for its always-visible checkboxes. */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-12 bg-linear-to-b from-black/40 to-transparent opacity-0 transition-opacity duration-150 sm:group-hover/tile:opacity-100",
+          selectionActive && "opacity-100",
+        )}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-150 sm:group-hover/tile:opacity-100"
       />
 
       {isVideo && (
@@ -166,7 +184,7 @@ export function PhotoTile({
               // The filled dot pops in with a spring and shrinks away on deselect.
               <motion.span
                 key="selected"
-                className="absolute -inset-0.5 flex items-center justify-center rounded-full bg-primary"
+                className="absolute -inset-0.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0, opacity: 0, transition: { duration: 0.15, ease: "easeIn" } }}
