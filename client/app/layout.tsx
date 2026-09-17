@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/provider/theme-provider";
 import QueryProvider from "@/components/provider/query-provider";
+import { MotionProvider } from "@/components/provider/motion-provider";
 import { Toaster } from "@/components/ui/sonner";
 const raleway = Raleway({subsets:['latin'],variable:'--font-sans'});
 
@@ -54,7 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             disableTransitionOnChange
           >
             <QueryProvider>
-              {children}
+              <MotionProvider>{children}</MotionProvider>
             </QueryProvider>
             {/* Lifted 96px off the bottom so toasts clear the 56px upload FAB
                 (bottom-6), plus the upload manager panel's height while it's

@@ -11,6 +11,11 @@ import { PhotoViewer } from "@/components/photos/photo-viewer";
 import { useSearchPhotos } from "@/hooks/use-photos";
 import type { Photo } from "@/lib/api";
 
+// Search results aren't selectable. Module-level so the grid's memoization
+// isn't defeated by a fresh Set/handler on every render.
+const NO_SELECTION = new Set<string>();
+function ignoreToggle() {}
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
@@ -69,9 +74,9 @@ export default function SearchPage() {
       ) : (
         <PhotoGrid
           photos={photos}
-          selectedIds={new Set()}
+          selectedIds={NO_SELECTION}
           selectionActive={false}
-          onToggleSelect={() => {}}
+          onToggleSelect={ignoreToggle}
           onOpen={handleOpen}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}

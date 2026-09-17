@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { RiFileCopyLine } from "@remixicon/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +24,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { CopyLinkButton } from "@/components/sharing/copy-link-button";
 import {
   useCreateAlbumShare,
   useCreatePhotoShare,
@@ -73,12 +72,6 @@ export function ShareDialog({ open, onOpenChange, type, targetId, targetTitle }:
     }
   }
 
-  async function handleCopy() {
-    if (!existingLink) return;
-    await navigator.clipboard.writeText(existingLink.url);
-    toast.success("Link copied to clipboard!");
-  }
-
   function handleRevoke() {
     if (!existingLink) return;
     revokeLink.mutate(existingLink.id, {
@@ -114,15 +107,7 @@ export function ShareDialog({ open, onOpenChange, type, targetId, targetTitle }:
               </p>
               <div className="flex items-center gap-2">
                 <Input value={existingLink.url} readOnly onFocus={(event) => event.target.select()} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopy}
-                  aria-label="Copy link"
-                >
-                  <RiFileCopyLine className="size-4" />
-                </Button>
+                <CopyLinkButton url={existingLink.url} />
               </div>
             </div>
           ) : (

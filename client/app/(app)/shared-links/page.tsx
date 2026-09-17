@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { RiFileCopyLine, RiFolderImageLine, RiImageLine, RiLinksLine } from "@remixicon/react";
+import { RiFolderImageLine, RiImageLine, RiLinksLine } from "@remixicon/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
+import { CopyLinkButton } from "@/components/sharing/copy-link-button";
 import { ErrorState } from "@/components/layout/error-state";
 import { useRevokeSharedLink, useSharedLinks } from "@/hooks/use-shared-links";
 import { formatPhotoDate } from "@/lib/format";
@@ -26,11 +26,6 @@ export default function SharedLinksPage() {
   const { data: links, isLoading, isError, error, refetch, isRefetching } = useSharedLinks();
   const revokeLink = useRevokeSharedLink();
   const [revokeTarget, setRevokeTarget] = useState<SharedLink | null>(null);
-
-  async function handleCopy(url: string) {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard!");
-  }
 
   if (isLoading) {
     return (
@@ -91,14 +86,8 @@ export default function SharedLinksPage() {
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() => handleCopy(link.url)}
-                  aria-label="Copy link"
-                >
-                  <RiFileCopyLine className="size-4" />
-                </Button>
+                <CopyLinkButton url={link.url} size="sm" />
+
                 <Button
                   variant="ghost"
                   size="sm"

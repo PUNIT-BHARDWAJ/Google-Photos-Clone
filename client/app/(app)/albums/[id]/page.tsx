@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -43,6 +43,13 @@ export default function AlbumDetailPage() {
   const [addPhotosOpen, setAddPhotosOpen] = useState(false);
 
   const photos = data?.pages.flatMap((page) => page.content) ?? [];
+  const coverPhotoId = album?.coverPhotoId;
+  // Stable across renders (the grid is memoized); only a cover change or a
+  // different album gives the tiles a new menu.
+  const renderTileMenu = useCallback(
+    (photo: Photo) => <PhotoTileMenu photo={photo} albumId={id} isCover={photo.id === coverPhotoId} />,
+    [id, coverPhotoId],
+  );
 
   function handleOpen(photo: Photo) {
     const index = photos.findIndex((item) => item.id === photo.id);
@@ -149,9 +156,7 @@ export default function AlbumDetailPage() {
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           onLoadMore={fetchNextPage}
-          renderTileMenu={(photo) => (
-            <PhotoTileMenu photo={photo} albumId={id} isCover={photo.id === album.coverPhotoId} />
-          )}
+          renderTileMenu={renderTileMenu}
         />
       )}
 

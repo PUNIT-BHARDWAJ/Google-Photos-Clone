@@ -129,5 +129,126 @@
   }
   html {
     @apply font-sans;
+    /* Base UI's modal scroll lock sets scrollbar-gutter: stable on <html> with
+       classic scrollbars. Changing its computed value restyles the whole
+       document (~15ms at 1x, far more on slow devices) right as the viewer or
+       a dialog animates open/closed; with it already stable the lock is free.
+       Also keeps the layout from shifting between scrolling and short pages. */
+    scrollbar-gutter: stable;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Motion                                                                   */
+/* Every keyframe below moves only transform/opacity (plus one SVG stroke   */
+/* offset), so they run on the compositor instead of forcing layout.        */
+/* ------------------------------------------------------------------------ */
+
+@theme {
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-float: float 1.8s ease-in-out infinite;
+  --animate-march: march 0.6s linear infinite;
+  --animate-fab-pulse: fab-pulse 5s ease-out infinite;
+  --animate-dot-bounce: dot-bounce 1s ease-in-out infinite;
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes march {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+
+  /* One soft ring every 5s, then idle for the rest of the cycle. */
+  @keyframes fab-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.45;
+    }
+    24%,
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
+  @keyframes dot-bounce {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    40% {
+      transform: translateY(-6px);
+      opacity: 1;
+    }
+  }
+}
+
+/* Toasts: slide up + fade in over 200ms, slide right + fade out over 150ms.
+   Sonner injects its stylesheet at runtime (after this one), so these carry
+   extra attribute selectors to outrank its rules rather than tie with them -
+   its removed-toast rules go up to five attribute selectors.
+   (Sonner already drops all motion under prefers-reduced-motion.) */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition:
+    transform 200ms ease-out,
+    opacity 200ms ease-out,
+    height 200ms ease-out,
+    box-shadow 200ms;
+}
+
+/* Sonner flips a new toast to data-mounted before the browser ever paints its
+   starting position, so the enter *transition* never actually plays. A
+   keyframe animation runs on insertion regardless; it ends on the toast's
+   resting transform (var(--y)), so stacking still positions it. */
+[data-sonner-toaster] [data-sonner-toast][data-mounted="true"]:not([data-removed="true"]) {
+  animation: toast-enter 200ms ease-out;
+}
+
+@keyframes toast-enter {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-removed="true"][data-swipe-out="false"][data-front][data-expanded][data-y-position] {
+  --y: translateX(calc(100% + 1.5rem));
+  opacity: 0;
+  transition:
+    transform 150ms ease-in,
+    opacity 150ms ease-in;
+}
+
+/* Users who ask for reduced motion get instant state changes everywhere CSS
+   animates. Framer Motion is switched off separately (MotionProvider). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

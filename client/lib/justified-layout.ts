@@ -50,10 +50,15 @@ export function computeJustifiedRows<T>(
     let usedWidth = 0;
     const items: JustifiedItem<T>[] = currentRow.map(({ photo, aspectRatio }, index) => {
       const isLast = index === currentRow.length - 1;
+      // The unstretched last row is floored rather than rounded: the grid
+      // renders every tile in one flex-wrap container, so a row that rounded
+      // up past the container width would wrap its final tile onto a new line.
       const width =
         stretch && isLast
           ? Math.max(availableWidth - usedWidth, 1)
-          : Math.round(aspectRatio * rowHeight);
+          : stretch
+            ? Math.round(aspectRatio * rowHeight)
+            : Math.max(Math.floor(aspectRatio * rowHeight), 1);
       usedWidth += width;
       return { photo, width, height };
     });

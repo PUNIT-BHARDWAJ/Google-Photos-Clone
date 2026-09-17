@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { RiCheckLine, RiPlayCircleFill } from "@remixicon/react";
-import { Camera, MapPin, Star } from "lucide-react";
+import { Camera, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToggleStar } from "@/hooks/use-photos";
-import { getTileImageSources } from "@/lib/imagekit";
+import { getPlaceholderSrc, getTileImageSources } from "@/lib/imagekit";
+import { AnimatedStar } from "@/components/photos/animated-star";
 import type { Photo } from "@/lib/api";
 
 // A 9:16 portrait in a 150px mobile row is only ~49px wide - at that size the
@@ -14,6 +16,7 @@ const COMPACT_TILE_WIDTH = 60;
 
 type PhotoTileProps = {
   photo: Photo;
+  /** Rendered size in CSS pixels - the parent grid cell sets the actual box. */
   width: number;
   height: number;
   selected: boolean;
@@ -36,12 +39,15 @@ export function PhotoTile({
   const isVideo = photo.mimeType?.startsWith("video/");
   const toggleStar = useToggleStar();
   const [loaded, setLoaded] = useState(false);
+  // Dropped once the real image has fully faded in over it.
+  const [placeholderDone, setPlaceholderDone] = useState(false);
   // If the sized rendition ever fails, fall back to the stored thumbnail
   // rather than leaving an empty tile.
   const [sizedFailed, setSizedFailed] = useState(false);
   const { src, srcSet } = sizedFailed
     ? { src: photo.thumbnailUrl || photo.url, srcSet: undefined }
     : getTileImageSources(photo, height);
+  const placeholderSrc = getPlaceholderSrc(photo);
 
   // Compact tiles drop the overlays unless they carry state: the checkbox
   // returns once selection mode is on (so the tile can still be picked), and a
@@ -56,11 +62,29 @@ export function PhotoTile({
   return (
     <div
       className={cn(
-        "group/tile relative shrink-0 overflow-hidden rounded-lg bg-muted select-none",
+        // Hover lift: transform (scale) + a touch of brightness, never a size
+        // change, so the justified rows don't reflow; the shadow is a separate
+        // layer in JustifiedGrid's cell (this element clips its content).
+        // Tailwind's hover variant only applies on devices that can hover -
+        // taps on touch screens don't trigger a stuck "lifted" state.
+        "group/tile relative h-full w-full overflow-hidden rounded-lg bg-muted select-none transition-[scale] duration-150 ease-out hover:scale-[1.02]",
         selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
       )}
-      style={{ width, height }}
     >
+      {placeholderSrc && !placeholderDone && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={placeholderSrc}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          // Scaled up so the blur's soft edges fall outside the rounded tile.
+          className="absolute inset-0 h-full w-full scale-110 object-cover blur-lg"
+        />
+      )}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -73,10 +97,13 @@ export function PhotoTile({
         onError={() => {
           if (srcSet) setSizedFailed(true);
         }}
+        onTransitionEnd={(event) => {
+          if (event.propertyName === "opacity" && loaded) setPlaceholderDone(true);
+        }}
         className={cn(
-          "h-full w-full object-cover transition-[opacity,transform] duration-300",
+          "relative h-full w-full object-cover [transition:opacity_300ms_ease-out,scale_300ms_ease-out,filter_150ms_ease-out]",
           loaded ? "opacity-100" : "opacity-0",
-          selected ? "scale-95" : "group-hover/tile:scale-105",
+          selected ? "scale-95" : "group-hover/tile:brightness-105",
         )}
       />
 
@@ -105,19 +132,16 @@ export function PhotoTile({
         </div>
       )}
 
-      {/* The tile's primary action is a real button covering the photo (it
-          doubles as the hover tint), so photos can be opened - or picked in
-          selection mode - from the keyboard. It sits before the select and
-          star buttons, which stay on top of it, so tab order is open, select,
-          star. A clickable <div> wasn't focusable at all. */}
+      {/* The tile's primary action is a real button covering the photo, so
+          photos can be opened - or picked in selection mode - from the
+          keyboard. It sits before the select and star buttons, which stay on
+          top of it, so tab order is open, select, star. It deliberately has no
+          press-scale: pressing the photo itself opens it, not "clicks" it. */}
       <button
         type="button"
         aria-label={selectionActive ? `${selected ? "Deselect" : "Select"} ${label}` : `Open ${label}`}
         onClick={() => (selectionActive ? onToggleSelect(photo.id) : onOpen(photo))}
-        className={cn(
-          "absolute inset-0 cursor-pointer rounded-lg bg-black/0 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-primary focus-visible:ring-inset",
-          !selected && "group-hover/tile:bg-black/10",
-        )}
+        className="absolute inset-0 cursor-pointer rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-primary focus-visible:ring-inset"
       />
 
       {showSelect && (
@@ -131,13 +155,27 @@ export function PhotoTile({
           className={cn(
             // Hover-revealed on pointer devices, but always visible below `sm` since
             // touch screens have no hover state to reveal it with otherwise.
-            "absolute left-1.5 top-1.5 flex size-6 items-center justify-center rounded-full border-2 border-white/80 bg-black/10 text-white opacity-100 shadow-sm backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover/tile:opacity-100 focus-visible:opacity-100",
+            "absolute left-1.5 top-1.5 flex size-6 items-center justify-center rounded-full border-2 border-white/80 bg-black/10 text-white opacity-100 shadow-sm backdrop-blur-sm transition-[opacity,scale,border-color] duration-150 active:scale-90 sm:opacity-0 sm:group-hover/tile:opacity-100 focus-visible:opacity-100",
             // Must be `sm:` too - a plain opacity-100 loses to the `sm:opacity-0`
             // hover gate above, which hid the checkmark on desktop until hover.
-            selected && "border-primary bg-primary sm:opacity-100",
+            selected && "border-primary sm:opacity-100",
           )}
         >
-          {selected && <RiCheckLine className="size-3.5" />}
+          <AnimatePresence initial={false}>
+            {selected && (
+              // The filled dot pops in with a spring and shrinks away on deselect.
+              <motion.span
+                key="selected"
+                className="absolute -inset-0.5 flex items-center justify-center rounded-full bg-primary"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0, opacity: 0, transition: { duration: 0.15, ease: "easeIn" } }}
+                transition={{ type: "spring", stiffness: 500, damping: 22 }}
+              >
+                <RiCheckLine className="size-3.5" />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
       )}
 
@@ -150,11 +188,11 @@ export function PhotoTile({
             toggleStar.mutate(photo);
           }}
           className={cn(
-            "absolute bottom-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/10 opacity-100 shadow-sm backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover/tile:opacity-100 focus-visible:opacity-100",
+            "absolute bottom-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/10 opacity-100 shadow-sm backdrop-blur-sm transition-[opacity,scale] duration-150 active:scale-90 sm:opacity-0 sm:group-hover/tile:opacity-100 focus-visible:opacity-100",
             photo.starred && "sm:opacity-100",
           )}
         >
-          <Star className={cn("size-3.5", photo.starred ? "fill-amber-400 text-amber-400" : "text-white")} />
+          <AnimatedStar starred={photo.starred} className="size-3.5" outlineClassName="text-white" />
         </button>
       )}
 

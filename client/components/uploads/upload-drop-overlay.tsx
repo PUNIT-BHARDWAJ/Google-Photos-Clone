@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Upload } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// How long the overlay stays up after a drop, pulsing to confirm it landed.
+const DROP_FLASH_MS = 150;
 
 type UploadDropOverlayProps = {
   enabled: boolean;
@@ -18,6 +23,7 @@ export function UploadDropOverlay({ enabled, onFiles, children }: UploadDropOver
   // dragLeave on the parent before dragEnter on the child, so a boolean would
   // flicker the overlay off and back on for every child boundary crossed.
   const [dragCounter, setDragCounter] = useState(0);
+  const [flashing, setFlashing] = useState(false);
   const onFilesRef = useRef(onFiles);
 
   useEffect(() => {
@@ -30,6 +36,8 @@ export function UploadDropOverlay({ enabled, onFiles, children }: UploadDropOver
   // must upload too instead of the browser navigating away to the file.
   useEffect(() => {
     if (!enabled) return;
+
+    let flashTimer: ReturnType<typeof setTimeout> | null = null;
 
     function handleDragEnter(event: DragEvent) {
       if (!isFileDrag(event)) return;
@@ -59,6 +67,10 @@ export function UploadDropOverlay({ enabled, onFiles, children }: UploadDropOver
       const files = Array.from(event.dataTransfer?.files ?? []);
       if (files.length > 0) {
         onFilesRef.current(files);
+        // A brief pulse before the overlay leaves confirms the drop landed.
+        if (flashTimer) clearTimeout(flashTimer);
+        setFlashing(true);
+        flashTimer = setTimeout(() => setFlashing(false), DROP_FLASH_MS);
       }
     }
 
@@ -72,9 +84,13 @@ export function UploadDropOverlay({ enabled, onFiles, children }: UploadDropOver
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
+      if (flashTimer) clearTimeout(flashTimer);
       setDragCounter(0);
+      setFlashing(false);
     };
   }, [enabled]);
+
+  const visible = enabled && (dragCounter > 0 || flashing);
 
   // Always renders the same wrapper so `<main>` keeps the same flex-1 layout
   // context on every route - only the listeners/overlay depend on `enabled`.
@@ -82,18 +98,51 @@ export function UploadDropOverlay({ enabled, onFiles, children }: UploadDropOver
     <div className="relative flex-1">
       {children}
 
-      {enabled && dragCounter > 0 && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-primary/10 p-6 backdrop-blur-[2px]"
-        >
-          <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-primary bg-background/95 px-12 py-10 text-center shadow-lg animate-in fade-in zoom-in-95 duration-150">
-            <Upload className="size-10 text-primary" />
-            <p className="text-lg font-medium text-foreground">Drop photos here to upload</p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            key="drop-overlay"
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[2px] transition-colors duration-100",
+              flashing ? "bg-primary/25" : "bg-primary/10",
+            )}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          >
+            <motion.div
+              className="relative flex flex-col items-center gap-3 rounded-3xl bg-background/95 px-12 py-10 text-center shadow-lg"
+              initial={{ scale: 0.96 }}
+              animate={{ scale: flashing ? 1.04 : 1 }}
+              exit={{ scale: 0.96 }}
+              transition={{ duration: flashing ? 0.1 : 0.15, ease: "easeOut" }}
+            >
+              {/* A CSS dashed border can't animate, so the dashes are an SVG
+                  outline whose dash offset marches around the card. */}
+              <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
+                <rect
+                  x="1"
+                  y="1"
+                  rx="30"
+                  ry="30"
+                  fill="none"
+                  strokeWidth="2"
+                  strokeDasharray="10 10"
+                  className="animate-march stroke-primary"
+                  style={{ width: "calc(100% - 2px)", height: "calc(100% - 2px)" }}
+                />
+              </svg>
+              <Upload className="size-10 animate-float text-primary" />
+              <p className="text-lg font-medium text-foreground">
+                {flashing ? "Uploading…" : "Drop photos here to upload"}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

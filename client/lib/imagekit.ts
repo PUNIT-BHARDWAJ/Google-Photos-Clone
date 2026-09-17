@@ -28,6 +28,40 @@ function withHeightTransform(url: URL, height: number) {
   return next.toString();
 }
 
+function transformableUrl(photo: Pick<Photo, "url" | "mimeType">): URL | null {
+  if (photo.mimeType && UNTRANSFORMABLE_TYPES.has(photo.mimeType)) return null;
+  try {
+    const url = new URL(photo.url);
+    return isImageKitUrl(url) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A ~16px-tall, low-quality rendition (a few hundred bytes) for blur-up
+ * loading: shown blurred while the real tile image downloads, so a tile
+ * crossfades from a colour-accurate blur instead of popping in from an
+ * empty grey box. Null when the photo can't be resized by ImageKit.
+ */
+export function getPlaceholderSrc(photo: Pick<Photo, "url" | "mimeType">): string | null {
+  const url = transformableUrl(photo);
+  if (!url) return null;
+  const next = new URL(url);
+  next.searchParams.set("tr", "h-16,q-40,f-auto");
+  return next.toString();
+}
+
+/**
+ * A mid-size rendition to show in the photo viewer while the full-resolution
+ * original loads. It matches the 1x grid rendition for most desktop rows, so
+ * it's usually already in the browser cache when a photo is opened.
+ */
+export function getViewerPreviewSrc(photo: Pick<Photo, "url" | "mimeType">): string | null {
+  const url = transformableUrl(photo);
+  return url ? withHeightTransform(url, 240) : null;
+}
+
 /**
  * `src`/`srcSet` for a grid tile rendered `displayHeight` CSS pixels tall:
  * a 1x rendition plus a 2x one for high-DPI screens.
@@ -36,16 +70,8 @@ export function getTileImageSources(
   photo: Pick<Photo, "url" | "thumbnailUrl" | "mimeType">,
   displayHeight: number,
 ): { src: string; srcSet?: string } {
-  const fallback = { src: photo.thumbnailUrl || photo.url };
-  if (photo.mimeType && UNTRANSFORMABLE_TYPES.has(photo.mimeType)) return fallback;
-
-  let url: URL;
-  try {
-    url = new URL(photo.url);
-  } catch {
-    return fallback;
-  }
-  if (!isImageKitUrl(url)) return fallback;
+  const url = transformableUrl(photo);
+  if (!url) return { src: photo.thumbnailUrl || photo.url };
 
   const oneX = withHeightTransform(url, snapHeight(displayHeight));
   const twoX = withHeightTransform(url, snapHeight(displayHeight * 2));

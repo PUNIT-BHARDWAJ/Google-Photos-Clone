@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTargetRowHeight } from "@/hooks/use-target-row-height";
 
 // Varied ratios so the skeleton reads as a justified grid (mixed tile
@@ -12,15 +13,15 @@ export function PhotoGridSkeleton() {
   const targetRowHeight = useTargetRowHeight();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" role="status" aria-label="Loading photos">
       {[0, 1].map((sectionIndex) => (
         <div key={sectionIndex} className="space-y-3">
-          <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+          <Skeleton className="h-4 w-32 rounded" />
           <div className="flex flex-wrap gap-1">
             {SKELETON_ASPECT_RATIOS.map((ratio, itemIndex) => (
-              <div
+              <Skeleton
                 key={itemIndex}
-                className="shrink-0 animate-pulse rounded-lg bg-muted"
+                className="shrink-0 rounded-lg"
                 style={{ width: Math.round(ratio * targetRowHeight), height: targetRowHeight }}
               />
             ))}

@@ -1,8 +1,45 @@
 "use client";
 
+import { useState } from "react";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { RiCloseLine } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const countVariants: Variants = {
+  enter: (direction: number) => ({ y: direction * 10, opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (direction: number) => ({ y: direction * -10, opacity: 0 }),
+};
+
+// The number rolls up when the selection grows and down when it shrinks.
+function AnimatedCount({ value }: { value: number }) {
+  const [previous, setPrevious] = useState(value);
+  const [direction, setDirection] = useState(1);
+  if (value !== previous) {
+    setDirection(value > previous ? 1 : -1);
+    setPrevious(value);
+  }
+
+  return (
+    <span className="relative inline-flex overflow-hidden tabular-nums">
+      <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+        <motion.span
+          key={value}
+          custom={direction}
+          variants={countVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="inline-block"
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
 
 type SelectionToolbarProps = {
   count: number;
@@ -21,7 +58,10 @@ export function SelectionToolbar({ count, onClear, actions }: SelectionToolbarPr
         <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Clear selection">
           <RiCloseLine className="size-4" />
         </Button>
-        <span className="text-sm font-medium text-foreground">{count} selected</span>
+        <span className="flex items-baseline gap-1 text-sm font-medium text-foreground" aria-live="polite">
+          <AnimatedCount value={count} />
+          selected
+        </span>
       </div>
       {/* Actions go icon-only below `sm` (see SelectionAction), which fits every
           page's action set beside the count. overflow-x-auto stays only as a
