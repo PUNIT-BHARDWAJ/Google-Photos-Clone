@@ -49,6 +49,7 @@ public class AiAnalysisService {
     private static final int MAX_ERROR_LENGTH = 500;
     private static final long RATE_LIMIT_WAIT_MS = 60_000;
     private static final int RATE_LIMIT_RETRIES = 2;
+    private static final int MAX_CONSECUTIVE_OVERLOADED = 3;
     private static final long CANCEL_POLL_MS = 200;
 
     private final PhotoRepository photoRepository;
@@ -236,6 +237,7 @@ public class AiAnalysisService {
                 try {
                     saveAnalysis(photoId, analyze(photo));
                     job.succeeded.incrementAndGet();
+                    job.consecutiveOverloaded = 0;
                     return null;
                 } catch (GeminiException ex) {
                     if (ex.getKind() == Kind.RATE_LIMITED && attempt < RATE_LIMIT_RETRIES) {
@@ -247,9 +249,15 @@ public class AiAnalysisService {
                     }
                     recordFailure(photoId, ex);
                     job.failed.incrementAndGet();
+                    // One overloaded answer is noise; several in a row means every
+                    // remaining photo would fail the same way, slowly.
+                    job.consecutiveOverloaded = ex.getKind() == Kind.OVERLOADED ? job.consecutiveOverloaded + 1 : 0;
                     return switch (ex.getKind()) {
                         case RATE_LIMITED -> "Paused: Gemini's rate limit was reached. Try again in a few minutes.";
-                        case INVALID_KEY, NOT_CONFIGURED, MODEL_UNAVAILABLE -> "Stopped: " + ex.getMessage();
+                        case INVALID_KEY, NOT_CONFIGURED, MODEL_UNAVAILABLE, QUOTA_EXHAUSTED -> "Stopped: " + ex.getMessage();
+                        case OVERLOADED -> job.consecutiveOverloaded >= MAX_CONSECUTIVE_OVERLOADED
+                                ? "Paused: Gemini is overloaded right now. Try again in a few minutes."
+                                : null;
                         default -> null;
                     };
                 } catch (ImageKitUploadException ex) {
@@ -347,6 +355,8 @@ public class AiAnalysisService {
         volatile boolean cancelRequested;
         volatile Instant finishedAt;
         volatile String message = "Running";
+        // Only touched by the job's own thread.
+        int consecutiveOverloaded;
 
         BulkJob(int total) {
             this.total = total;

@@ -181,7 +181,7 @@ Every value can also come from an environment variable instead:
 | `JWT_SECRET` | an insecure placeholder; always set it |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | placeholders (Google sign-in disabled) |
 | `GEMINI_API_KEY` | `placeholder` (AI features disabled) |
-| `GEMINI_MODEL` | `gemini-2.0-flash` |
+| `GEMINI_MODEL` | `gemini-flash-latest` |
 | `DB_USERNAME`, `DB_PASSWORD` | `postgres` / `postgres` |
 | `OAUTH2_FRONTEND_REDIRECT_URI` | `http://localhost:3000` |
 | `REQUEST_LOG_LEVEL` | `INFO` (`DEBUG` logs every request) |
@@ -201,7 +201,8 @@ Every value can also come from an environment variable instead:
 
 Good to know:
 - Requests are limited to 15 per minute (the free tier), with bulk analysis spaced 4 seconds apart and automatic retries with backoff when Gemini returns 429. Tune `gemini.requests-per-minute`, `gemini.bulk-delay-ms`, `gemini.timeout-seconds` and `gemini.max-retries` if your quota differs.
-- If Google has retired the configured model, the backend switches to `gemini.fallback-model` (`gemini-flash-latest`) and logs a warning. Set `GEMINI_MODEL` to pin a different one.
+- The default model is `gemini-flash-latest`, Google's alias for the current Flash model. Set `GEMINI_MODEL` to pin a specific version; if Google later retires it, the backend switches back to `gemini.fallback-model` (`gemini-flash-latest`) and logs a warning.
+- Keys from AI Studio may start with `AQ.` instead of `AIza`; both work. If Settings reports that Google didn't recognize the key, generate a new one in AI Studio. The backend log shows Google's exact reason for any rejected key.
 - Only a 1024px JPEG copy of each photo is sent for analysis. AI search sends captions and tags, never images.
 
 ### 4. Run the backend

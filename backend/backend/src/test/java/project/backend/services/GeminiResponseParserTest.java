@@ -163,4 +163,56 @@ class GeminiResponseParserTest {
         assertThat(GeminiResponseParser.isInvalidKeyError(invalidKey)).isTrue();
         assertThat(GeminiResponseParser.isInvalidKeyError(rateLimited)).isFalse();
     }
+
+    @Test
+    void explainsWhyAKeyWasRefused() {
+        var invalid = GeminiResponseParser.tryParse("""
+                {"error": {"code": 400, "status": "INVALID_ARGUMENT", "message": "API key not valid. Please pass a valid API key.",
+                  "details": [{"reason": "API_KEY_INVALID"}]}}
+                """);
+        var disabled = GeminiResponseParser.tryParse("""
+                {"error": {"code": 403, "status": "PERMISSION_DENIED",
+                  "message": "Generative Language API has not been used in project 123 before or it is disabled.",
+                  "details": [{"reason": "SERVICE_DISABLED"}]}}
+                """);
+        var restricted = GeminiResponseParser.tryParse("""
+                {"error": {"code": 403, "status": "PERMISSION_DENIED", "message": "Requests to this API are blocked.",
+                  "details": [{"reason": "API_KEY_SERVICE_BLOCKED"}]}}
+                """);
+        var expired = GeminiResponseParser.tryParse("""
+                {"error": {"code": 400, "status": "INVALID_ARGUMENT", "message": "API key expired. Please renew the API key.",
+                  "details": [{"reason": "API_KEY_EXPIRED"}]}}
+                """);
+
+        assertThat(GeminiResponseParser.keyProblemMessage(invalid)).contains("rejected the API key");
+        assertThat(GeminiResponseParser.keyProblemMessage(disabled)).contains("isn't enabled");
+        assertThat(GeminiResponseParser.keyProblemMessage(restricted)).contains("restrictions");
+        assertThat(GeminiResponseParser.keyProblemMessage(expired)).contains("expired");
+        var notAKey = GeminiResponseParser.tryParse("""
+                {"error": {"code": 401, "status": "UNAUTHENTICATED",
+                  "message": "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential.",
+                  "details": [{"reason": "ACCESS_TOKEN_TYPE_UNSUPPORTED"}]}}
+                """);
+        assertThat(GeminiResponseParser.keyProblemMessage(notAKey)).contains("didn't recognize");
+        assertThat(GeminiResponseParser.isInvalidKeyError(expired)).isTrue();
+        assertThat(GeminiResponseParser.errorSummary(disabled))
+                .startsWith("PERMISSION_DENIED [SERVICE_DISABLED]: Generative Language API");
+    }
+
+    @Test
+    void readsQuotaViolations() {
+        var perMinute = GeminiResponseParser.tryParse("""
+                {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "Quota exceeded",
+                  "details": [{"violations": [{"quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"}]}]}}
+                """);
+        var perDay = GeminiResponseParser.tryParse("""
+                {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "Quota exceeded",
+                  "details": [{"violations": [{"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}]}}
+                """);
+
+        assertThat(GeminiResponseParser.isDailyQuotaExceeded(perMinute)).isFalse();
+        assertThat(GeminiResponseParser.isDailyQuotaExceeded(perDay)).isTrue();
+        assertThat(GeminiResponseParser.errorSummary(perDay))
+                .isEqualTo("RESOURCE_EXHAUSTED quota=[GenerateRequestsPerDayPerProjectPerModel-FreeTier]: Quota exceeded");
+    }
 }

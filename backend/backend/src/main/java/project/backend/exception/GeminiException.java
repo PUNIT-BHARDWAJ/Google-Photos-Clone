@@ -13,6 +13,10 @@ public class GeminiException extends RuntimeException {
         INVALID_KEY(HttpStatus.SERVICE_UNAVAILABLE),
         MODEL_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
         RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
+        /** The daily quota is used up - retrying before it resets is pointless. */
+        QUOTA_EXHAUSTED(HttpStatus.TOO_MANY_REQUESTS),
+        /** Gemini answered 5xx (typically "The model is overloaded") even after retries. */
+        OVERLOADED(HttpStatus.SERVICE_UNAVAILABLE),
         TIMEOUT(HttpStatus.GATEWAY_TIMEOUT),
         BAD_RESPONSE(HttpStatus.BAD_GATEWAY),
         UPSTREAM_ERROR(HttpStatus.BAD_GATEWAY);

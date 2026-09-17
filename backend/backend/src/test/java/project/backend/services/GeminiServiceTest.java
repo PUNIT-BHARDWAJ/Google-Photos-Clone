@@ -120,6 +120,41 @@ class GeminiServiceTest {
     }
 
     @Test
+    void aUsedUpDailyQuotaIsNotRetried() {
+        replies.add(new Reply(429, """
+                {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "You exceeded your current quota.",
+                  "details": [{"@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                               "violations": [{"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]},
+                              {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "0.1s"}]}}
+                """));
+        GeminiService gemini = service("test-key", 3);
+
+        assertThatThrownBy(() -> gemini.analyzeImage(new byte[] {1}, "image/jpeg"))
+                .isInstanceOf(GeminiException.class)
+                .hasMessageContaining("daily free-tier limit")
+                .extracting(ex -> ((GeminiException) ex).getKind())
+                .isEqualTo(Kind.QUOTA_EXHAUSTED);
+        assertThat(requestedPaths).hasSize(1);
+        assertThat(gemini.status(false).status()).isEqualTo(GeminiService.ConnectionStatus.RATE_LIMITED);
+    }
+
+    @Test
+    void anOverloadedModelIsReportedWithGooglesReason() {
+        replies.add(new Reply(503, """
+                {"error": {"code": 503, "message": "The model is overloaded. Please try again later.", "status": "UNAVAILABLE"}}
+                """));
+        GeminiService gemini = service("test-key", 0);
+
+        assertThatThrownBy(() -> gemini.analyzeImage(new byte[] {1}, "image/jpeg"))
+                .isInstanceOf(GeminiException.class)
+                .hasMessageContaining("HTTP 503")
+                .hasMessageContaining("The model is overloaded")
+                .extracting(ex -> ((GeminiException) ex).getKind())
+                .isEqualTo(Kind.OVERLOADED);
+        assertThat(gemini.status(false).status()).isEqualTo(GeminiService.ConnectionStatus.ERROR);
+    }
+
+    @Test
     void reportsAnInvalidKeyWithoutRetrying() {
         replies.add(new Reply(400, """
                 {"error": {"code": 400, "message": "API key not valid. Please pass a valid API key.",

@@ -143,16 +143,93 @@ public final class GeminiResponseParser {
         if (errorBody == null) {
             return false;
         }
-        JsonNode error = errorBody.path("error");
-        for (JsonNode detail : error.path("details").values()) {
-            String reason = detail.path("reason").asString("");
-            if (reason.equals("API_KEY_INVALID") || reason.equals("API_KEY_SERVICE_BLOCKED")
-                    || reason.equals("API_KEY_HTTP_REFERRER_BLOCKED")) {
-                return true;
+        if (errorReasons(errorBody).stream().anyMatch(reason -> reason.startsWith("API_KEY_"))) {
+            return true;
+        }
+        return upstreamMessage(errorBody).toLowerCase(Locale.ROOT).contains("api key");
+    }
+
+    /**
+     * What to tell the user when Gemini refuses a key. Invalid, expired,
+     * restricted and "API not enabled" keys all arrive as 400/403 but need
+     * different fixes.
+     */
+    public static String keyProblemMessage(JsonNode errorBody) {
+        List<String> reasons = errorReasons(errorBody);
+        String message = upstreamMessage(errorBody).toLowerCase(Locale.ROOT);
+        if (reasons.contains("SERVICE_DISABLED") || message.contains("has not been used in project")
+                || message.contains("it is disabled")) {
+            return "The Gemini API isn't enabled for this key's Google Cloud project. Create the key in Google AI "
+                    + "Studio, or enable the Generative Language API for that project.";
+        }
+        if (reasons.stream().anyMatch(reason -> reason.startsWith("API_KEY_") && reason.endsWith("_BLOCKED"))) {
+            return "This API key's restrictions don't allow the Gemini API. Allow the Generative Language API "
+                    + "for the key in Google Cloud Console.";
+        }
+        if (reasons.contains("API_KEY_EXPIRED") || message.contains("expired")) {
+            return "The Gemini API key has expired. Create a new one in Google AI Studio.";
+        }
+        // Google answers this way when the value isn't an API key at all (an
+        // OAuth client secret, a token, a Vertex AI credential, stray quotes).
+        if (reasons.contains("ACCESS_TOKEN_TYPE_UNSUPPORTED") || message.contains("expected oauth 2 access token")) {
+            return "Google didn't recognize gemini.api-key as an API key. Paste the key from Google AI Studio "
+                    + "(aistudio.google.com/apikey) exactly, without quotes.";
+        }
+        return "Gemini rejected the API key. Check gemini.api-key.";
+    }
+
+    /** Google's own error text ("API key not valid..."), which never includes the key itself. */
+    public static String upstreamMessage(JsonNode errorBody) {
+        return errorBody == null ? "" : errorBody.path("error").path("message").asString("");
+    }
+
+    /** "PERMISSION_DENIED [SERVICE_DISABLED]: message", for logs. */
+    public static String errorSummary(JsonNode errorBody) {
+        if (errorBody == null) {
+            return "(no error body)";
+        }
+        String status = errorBody.path("error").path("status").asString("");
+        List<String> reasons = errorReasons(errorBody);
+        List<String> quotas = quotaIds(errorBody);
+        String summary = status + (reasons.isEmpty() ? "" : " " + reasons)
+                + (quotas.isEmpty() ? "" : " quota=" + quotas) + ": " + upstreamMessage(errorBody);
+        return summary.length() > 500 ? summary.substring(0, 499) + "…" : summary;
+    }
+
+    /** The quotas a 429 says were exceeded, e.g. "GenerateRequestsPerDayPerProjectPerModel-FreeTier". */
+    static List<String> quotaIds(JsonNode errorBody) {
+        List<String> ids = new ArrayList<>();
+        if (errorBody == null) {
+            return ids;
+        }
+        for (JsonNode detail : errorBody.path("error").path("details").values()) {
+            for (JsonNode violation : detail.path("violations").values()) {
+                String id = violation.path("quotaId").asString("");
+                if (!id.isEmpty() && !ids.contains(id)) {
+                    ids.add(id);
+                }
             }
         }
-        String message = error.path("message").asString("").toLowerCase(Locale.ROOT);
-        return message.contains("api key");
+        return ids;
+    }
+
+    /** True when a 429 is the daily quota - waiting a minute won't help, retries only waste time. */
+    public static boolean isDailyQuotaExceeded(JsonNode errorBody) {
+        return quotaIds(errorBody).stream().anyMatch(id -> id.contains("PerDay"));
+    }
+
+    static List<String> errorReasons(JsonNode errorBody) {
+        List<String> reasons = new ArrayList<>();
+        if (errorBody == null) {
+            return reasons;
+        }
+        for (JsonNode detail : errorBody.path("error").path("details").values()) {
+            String reason = detail.path("reason").asString("");
+            if (!reason.isEmpty()) {
+                reasons.add(reason);
+            }
+        }
+        return reasons;
     }
 
     // ---- Image analysis ---------------------------------------------------

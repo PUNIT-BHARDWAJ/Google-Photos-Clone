@@ -206,9 +206,12 @@ public class GeminiService {
                 if (code == 404 && switchToFallbackModel(model)) {
                     continue;
                 }
-                throw classifyError(code, body, model);
-            } catch (GeminiException ex) {
-                // classifyError already recorded the status.
+                GeminiException error = classifyError(code, body, model);
+                // Key, quota and model problems record their own status; anything
+                // else (an unsupported region, say) still has to show up here.
+                if (error.getKind() == Kind.UPSTREAM_ERROR) {
+                    record(ConnectionStatus.ERROR, error.getMessage());
+                }
                 return;
             } catch (IOException ex) {
                 record(ConnectionStatus.ERROR, "Couldn't reach Gemini: " + ex.getClass().getSimpleName());
@@ -338,25 +341,33 @@ public class GeminiService {
 
     private GeminiException classifyError(int code, JsonNode body, String model) {
         if (code == 429) {
+            log.warn("Gemini rate limited the request: {}", GeminiResponseParser.errorSummary(body));
+            if (GeminiResponseParser.isDailyQuotaExceeded(body)) {
+                return record(new GeminiException(Kind.QUOTA_EXHAUSTED,
+                        "Gemini's daily free-tier limit for " + model + " is used up. It resets at midnight Pacific time."),
+                        ConnectionStatus.RATE_LIMITED);
+            }
             return record(new GeminiException(Kind.RATE_LIMITED,
                     "AI is busy right now (rate limit reached). Try again in a minute."), ConnectionStatus.RATE_LIMITED);
         }
         if (code == 401 || code == 403 || (code == 400 && GeminiResponseParser.isInvalidKeyError(body))) {
-            return record(new GeminiException(Kind.INVALID_KEY,
-                    "Gemini rejected the API key. Check gemini.api-key."), ConnectionStatus.INVALID_KEY);
+            log.warn("Gemini refused the API key (HTTP {}): {}", code, GeminiResponseParser.errorSummary(body));
+            return record(new GeminiException(Kind.INVALID_KEY, GeminiResponseParser.keyProblemMessage(body)),
+                    ConnectionStatus.INVALID_KEY);
         }
         if (code == 404) {
             return record(new GeminiException(Kind.MODEL_UNAVAILABLE,
                     "The Gemini model \"" + model + "\" isn't available. Set gemini.model to a current model."),
                     ConnectionStatus.MODEL_UNAVAILABLE);
         }
+        String upstream = GeminiResponseParser.upstreamMessage(body);
+        String detail = upstream.isBlank() ? "" : ": " + (upstream.length() > 200 ? upstream.substring(0, 199) + "…" : upstream);
+        log.warn("Gemini request failed with HTTP {}: {}", code, GeminiResponseParser.errorSummary(body));
         if (code >= 500) {
-            return record(new GeminiException(Kind.UPSTREAM_ERROR,
-                    "Gemini is temporarily unavailable (HTTP " + code + ")"), ConnectionStatus.ERROR);
+            return record(new GeminiException(Kind.OVERLOADED,
+                    "Gemini is temporarily unavailable (HTTP " + code + ")" + detail), ConnectionStatus.ERROR);
         }
-        String upstream = body == null ? null : body.path("error").path("message").asString(null);
-        log.warn("Gemini request failed with HTTP {}: {}", code, upstream);
-        return new GeminiException(Kind.UPSTREAM_ERROR, "Gemini couldn't process the request (HTTP " + code + ")");
+        return new GeminiException(Kind.UPSTREAM_ERROR, "Gemini couldn't process the request (HTTP " + code + ")" + detail);
     }
 
     private boolean switchToFallbackModel(String failedModel) {
