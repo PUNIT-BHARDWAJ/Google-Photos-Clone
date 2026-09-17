@@ -6,6 +6,9 @@ import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+export const ACCEPTED_UPLOAD_TYPES =
+  "image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,image/bmp,image/tiff,image/svg+xml";
+
 const CHECK_FLASH_MS = 1000;
 // Ring geometry: a 68px box around the 56px button.
 const RING_SIZE = 68;
@@ -20,9 +23,14 @@ type UploadFabProps = {
   completed: boolean;
   /** Pulse gently to invite the first upload. */
   pulse: boolean;
+  /**
+   * The phone bottom bar slid away. The FAB sits just above that bar and
+   * follows it down a beat later (a cascading spring), then back up.
+   */
+  navHidden?: boolean;
 };
 
-export function UploadFab({ onFiles, progress, completed, pulse }: UploadFabProps) {
+export function UploadFab({ onFiles, progress, completed, pulse, navHidden = false }: UploadFabProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const active = progress !== null;
 
@@ -50,7 +58,7 @@ export function UploadFab({ onFiles, progress, completed, pulse }: UploadFabProp
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,image/bmp,image/tiff,image/svg+xml"
+        accept={ACCEPTED_UPLOAD_TYPES}
         multiple
         className="hidden"
         onChange={(event) => {
@@ -59,7 +67,12 @@ export function UploadFab({ onFiles, progress, completed, pulse }: UploadFabProp
           event.target.value = "";
         }}
       />
-      <div className="group/fab fixed bottom-6 right-6 z-30 size-14">
+      <motion.div
+        className="group/fab fixed right-6 bottom-6 z-30 size-14 max-md:right-4 max-md:bottom-[calc(80px+env(safe-area-inset-bottom))]"
+        initial={false}
+        animate={{ y: navHidden ? 72 : 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 35, delay: 0.03 }}
+      >
         {pulse && !active && (
           // Transform + opacity ring, once every 5s - only while the library
           // is empty, to nudge the first upload.
@@ -136,7 +149,7 @@ export function UploadFab({ onFiles, progress, completed, pulse }: UploadFabProp
             </motion.span>
           </AnimatePresence>
         </Button>
-      </div>
+      </motion.div>
     </>
   );
 }

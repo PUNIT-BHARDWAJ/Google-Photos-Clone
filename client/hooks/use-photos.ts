@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -8,29 +9,77 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api, type PageResponse, type Photo, type PhotoStatus } from "@/lib/api";
+import {
+  api,
+  type PageResponse,
+  type Photo,
+  type PhotoFilters,
+  type PhotoSort,
+  type PhotoStatus,
+} from "@/lib/api";
+import { saveBlob } from "@/lib/download";
 import { libraryKeys, photoKeys } from "@/lib/query-keys";
 
 const PAGE_SIZE = 60;
 
-export function usePhotos(status: PhotoStatus, starred?: boolean) {
+export function usePhotos(
+  status: PhotoStatus,
+  { filters = {}, sort = "taken_desc" }: { filters?: PhotoFilters; sort?: PhotoSort } = {},
+) {
   return useInfiniteQuery({
-    queryKey: photoKeys.list(status, starred),
-    queryFn: ({ pageParam }) => api.photos.list({ status, starred, page: pageParam, size: PAGE_SIZE }),
+    queryKey: photoKeys.list(status, filters, sort),
+    queryFn: ({ pageParam }) => api.photos.list({ status, filters, sort, page: pageParam, size: PAGE_SIZE }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
+    // Switching a chip or the sort keeps the current photos on screen until
+    // the new ones arrive, so the grid rearranges instead of flashing a skeleton.
+    placeholderData: keepPreviousData,
   });
 }
 
-export function useSearchPhotos(query: string, ai = false) {
+export function hasActiveFilters(filters: PhotoFilters) {
+  return !!(filters.scene || filters.color || filters.tags?.length || filters.from || filters.to);
+}
+
+export function useSearchPhotos(query: string, ai = false, filters: PhotoFilters = {}) {
   const trimmed = query.trim();
 
   return useInfiniteQuery({
-    queryKey: photoKeys.search(trimmed, ai),
-    queryFn: ({ pageParam }) => api.photos.search({ q: trimmed, ai, page: pageParam, size: PAGE_SIZE }),
+    queryKey: photoKeys.search(trimmed, ai, filters),
+    queryFn: ({ pageParam }) => api.photos.search({ q: trimmed, ai, filters, page: pageParam, size: PAGE_SIZE }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
-    enabled: trimmed.length > 0,
+    enabled: trimmed.length > 0 || hasActiveFilters(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Scene types, colors and tags in the library - options for chips, filters and autocomplete. */
+export function usePhotoFacets() {
+  return useQuery({
+    queryKey: photoKeys.facets(),
+    queryFn: () => api.photos.facets(),
+    staleTime: 60_000,
+  });
+}
+
+export function useDownloadPhotos() {
+  return useMutation({
+    mutationFn: async (photos: Photo[]) => {
+      const { blob } = await api.photos.download(photos.map((photo) => photo.id));
+      const name =
+        photos.length === 1 ? photos[0].fileName : `photos-${new Date().toISOString().slice(0, 10)}.zip`;
+      saveBlob(blob, name);
+      return photos.length;
+    },
+    onMutate: (photos) => {
+      toast.loading(photos.length === 1 ? "Preparing download…" : `Zipping ${photos.length} photos…`, {
+        id: "photo-download",
+      });
+    },
+    onSuccess: (count) =>
+      toast.success(count === 1 ? "Download started" : `Downloaded ${count} photos`, { id: "photo-download" }),
+    onError: (error) => toast.error(errorMessage(error, "Download failed"), { id: "photo-download" }),
   });
 }
 

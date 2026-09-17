@@ -31,6 +31,43 @@ export type AuthResponse = {
 
 export type PhotoStatus = "ACTIVE" | "ARCHIVE" | "TRASH";
 
+export type PhotoSort = "taken_desc" | "taken_asc" | "added_desc" | "added_asc";
+
+/** Narrowing shared by the timeline (chips, sort) and search (advanced panel). */
+export type PhotoFilters = {
+  starred?: boolean;
+  scene?: string;
+  color?: string;
+  tags?: string[];
+  /** ISO instants: photo date (capture, else upload) in [from, to). */
+  from?: string;
+  to?: string;
+  /** ISO instant: uploaded on or after ("Recent"). */
+  addedAfter?: string;
+};
+
+export type FacetCount = {
+  value: string;
+  count: number;
+  /** A style or color word too broad to suggest on its own. */
+  generic: boolean;
+};
+
+export type PhotoFacets = {
+  scenes: FacetCount[];
+  colors: FacetCount[];
+  tags: FacetCount[];
+};
+
+export type LibraryCounts = {
+  photos: number;
+  favorites: number;
+  albums: number;
+  sharedLinks: number;
+  archive: number;
+  trash: number;
+};
+
 export type AiTransformType =
   | "REMOVE_BACKGROUND"
   | "BACKGROUND_AND_SHADOW"
@@ -364,6 +401,48 @@ export async function getValidAccessToken(): Promise<string | null> {
   return null;
 }
 
+function appendFilters(query: URLSearchParams, filters: PhotoFilters = {}) {
+  if (filters.starred !== undefined) query.set("starred", String(filters.starred));
+  if (filters.scene) query.set("scene", filters.scene);
+  if (filters.color) query.set("color", filters.color);
+  filters.tags?.forEach((tag) => query.append("tag", tag));
+  if (filters.from) query.set("from", filters.from);
+  if (filters.to) query.set("to", filters.to);
+  if (filters.addedAfter) query.set("addedAfter", filters.addedAfter);
+  return query;
+}
+
+/** A request whose body is a file (photo or zip) rather than JSON. */
+async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; contentType: string }> {
+  const send = async (token: string | null) => {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    try {
+      return await fetch(`${API_URL}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
+    } catch {
+      throw new Error(NETWORK_ERROR_MESSAGE);
+    }
+  };
+
+  let response = await send(await getValidAccessToken());
+  if (response.status === 401) {
+    const outcome = await refreshAccessToken();
+    if (outcome.status === "refreshed") response = await send(outcome.accessToken);
+    if (outcome.status === "unreachable") throw new Error(NETWORK_ERROR_MESSAGE);
+  }
+  if (!response.ok) {
+    let message = "Download failed";
+    try {
+      const error = await response.json();
+      if (error?.message) message = error.message;
+    } catch {
+      // Not JSON - keep the generic message.
+    }
+    throw new Error(message);
+  }
+  return { blob: await response.blob(), contentType: response.headers.get("Content-Type") ?? "" };
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -450,17 +529,23 @@ export const api = {
   },
 
   photos: {
-    list: (params: { status: PhotoStatus; starred?: boolean; page?: number; size?: number }) => {
-      const query = new URLSearchParams({
-        status: params.status,
-        page: String(params.page ?? 0),
-        size: String(params.size ?? 60),
-      });
-      if (params.starred !== undefined) {
-        query.set("starred", String(params.starred));
-      }
+    list: (params: { status: PhotoStatus; filters?: PhotoFilters; sort?: PhotoSort; page?: number; size?: number }) => {
+      const query = appendFilters(
+        new URLSearchParams({
+          status: params.status,
+          page: String(params.page ?? 0),
+          size: String(params.size ?? 60),
+        }),
+        params.filters,
+      );
+      if (params.sort) query.set("sort", params.sort);
       return request<PageResponse<Photo>>(`/photos?${query.toString()}`);
     },
+
+    facets: () => request<PhotoFacets>("/photos/facets"),
+
+    /** One photo comes back as the original file, several as a zip. */
+    download: (photoIds: string[]) => requestBlob("/photos/download", { photoIds }),
 
     get: (id: string) => request<Photo>(`/photos/${id}`),
 
@@ -468,14 +553,24 @@ export const api = {
 
     toggleStar: (id: string) => request<Photo>(`/photos/${id}/star`, { method: "PUT" }),
 
-    search: (params: { q: string; ai?: boolean; status?: PhotoStatus; page?: number; size?: number }) => {
-      const query = new URLSearchParams({
-        q: params.q,
-        status: params.status ?? "ACTIVE",
-        ai: String(params.ai ?? false),
-        page: String(params.page ?? 0),
-        size: String(params.size ?? 60),
-      });
+    search: (params: {
+      q: string;
+      ai?: boolean;
+      filters?: PhotoFilters;
+      status?: PhotoStatus;
+      page?: number;
+      size?: number;
+    }) => {
+      const query = appendFilters(
+        new URLSearchParams({
+          q: params.q,
+          status: params.status ?? "ACTIVE",
+          ai: String(params.ai ?? false),
+          page: String(params.page ?? 0),
+          size: String(params.size ?? 60),
+        }),
+        params.filters,
+      );
       return request<PhotoSearchResponse>(`/photos/search?${query.toString()}`);
     },
 
@@ -602,6 +697,8 @@ export const api = {
 
   library: {
     storageUsage: () => request<StorageUsage>("/library/storage"),
+
+    counts: () => request<LibraryCounts>("/library/counts"),
 
     imagekitAssets: () => request<ImageKitAsset[]>("/library/imagekit-assets"),
 

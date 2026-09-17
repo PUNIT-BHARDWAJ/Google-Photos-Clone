@@ -22,7 +22,12 @@ type JustifiedGridProps = {
    * not in the map don't animate in - they've been seen before.
    */
   enterDelays: ReadonlyMap<string, number>;
+  /** Animate tile sizes as well as positions (after a density change). */
+  animateSize?: boolean;
 };
+
+const SIZE_SPRING = { type: "spring", stiffness: 300, damping: 30 } as const;
+const POSITION_TWEEN = { duration: 0.3, ease: "easeOut" } as const;
 
 // Memoized: a page re-render that leaves this day's photos, selection and
 // handlers unchanged (e.g. the viewer moving to the next photo) skips every
@@ -37,6 +42,7 @@ export const JustifiedGrid = memo(function JustifiedGrid({
   onOpen,
   renderTileMenu,
   enterDelays,
+  animateSize = false,
 }: JustifiedGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -100,15 +106,17 @@ export const JustifiedGrid = memo(function JustifiedGrid({
               key={photo.id}
               // Glide to the new position when the layout changes (a photo
               // above was removed); the size snaps, since scaling a tile to a
-              // new aspect ratio mid-flight would visibly distort the image.
-              layout="position"
+              // new aspect ratio mid-flight would visibly distort the image -
+              // except right after a density change, when every tile grows or
+              // shrinks together on a spring.
+              layout={animateSize ? true : "position"}
               // Only re-measure when the computed layout actually changed -
               // not on every selection toggle or star.
               layoutDependency={rows}
               initial={enterDelay === undefined ? false : { opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1, transition: { duration: 0.3, ease: "easeOut", delay: enterDelay ?? 0 } }}
               exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3, ease: "easeIn" } }}
-              transition={{ layout: { duration: 0.3, ease: "easeOut" } }}
+              transition={{ layout: animateSize ? SIZE_SPRING : POSITION_TWEEN }}
               // Raised while hovered so the lifted tile's shadow overlaps its
               // neighbours (still below the sticky day heading at z-10).
               className="group/cell relative hover:z-[5]"

@@ -1,6 +1,25 @@
 // Gemini names colors in plain words ("sky blue", "off white"). Most become a
-// CSS named color once the spaces are dropped; these are the common ones that don't.
+// CSS named color once the spaces are dropped; these are the common ones that
+// don't - plus the basic names, whose CSS values (blue is #0000ff) are far more
+// saturated than any color a photo is actually "mostly".
 const COLOR_ALIASES: Record<string, string> = {
+  red: "#dc4a3f",
+  orange: "#f08a3c",
+  yellow: "#f2c94c",
+  green: "#4f9d5d",
+  blue: "#4a7fd4",
+  purple: "#8e5cc7",
+  violet: "#8e5cc7",
+  pink: "#e98ab0",
+  brown: "#8a5a3b",
+  gray: "#9a9a9a",
+  grey: "#9a9a9a",
+  black: "#1a1a1a",
+  white: "#f7f7f5",
+  gold: "#d4a93c",
+  navy: "#243b6b",
+  teal: "#2f9a95",
+  turquoise: "#3cc6c0",
   "off white": "#f5f5f0",
   offwhite: "#f5f5f0",
   cream: "#fffdd0",

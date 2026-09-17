@@ -7,15 +7,20 @@ import io.imagekit.models.files.File;
 import project.backend.domain.PhotoStatus;
 import project.backend.domain.User;
 import project.backend.dto.PhotoResponse;
+import project.backend.dto.LibraryCountsResponse;
 import project.backend.dto.StorageUsageResponse;
 import project.backend.exception.ResourceNotFoundException;
+import project.backend.repository.AlbumRepository;
 import project.backend.repository.PhotoRepository;
+import project.backend.repository.SharedLinkRepository;
 import project.backend.dto.CreatePhotoRequest;
 import project.backend.dto.ImageKitAssetResponse;
 import project.backend.dto.ImportPhotosRequst;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class LibraryService {
@@ -23,16 +28,21 @@ public class LibraryService {
     private final PhotoRepository photoRepository;
     private final ImageKitService imageKitService;
     private final PhotoService photoService;
-
+    private final AlbumRepository albumRepository;
+    private final SharedLinkRepository sharedLinkRepository;
 
     public LibraryService(
             PhotoRepository photoRepository,
             ImageKitService imageKitService,
-            PhotoService photoService
+            PhotoService photoService,
+            AlbumRepository albumRepository,
+            SharedLinkRepository sharedLinkRepository
     ) {
         this.photoRepository = photoRepository;
         this.imageKitService = imageKitService;
         this.photoService = photoService;
+        this.albumRepository = albumRepository;
+        this.sharedLinkRepository = sharedLinkRepository;
     }
 
     @Transactional(readOnly = true)
@@ -40,6 +50,18 @@ public class LibraryService {
         long usedBytes = photoRepository.sumActivePhotoBytesByUserId(user.getId());
         long photoCount = photoRepository.countByUserIdAndStatus(user.getId(), PhotoStatus.ACTIVE);
         return new StorageUsageResponse(usedBytes, photoCount, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public LibraryCountsResponse getCounts(User user) {
+        UUID userId = user.getId();
+        return new LibraryCountsResponse(
+                photoRepository.countByUserIdAndStatus(userId, PhotoStatus.ACTIVE),
+                photoRepository.countByUserIdAndStatusAndStarredTrue(userId, PhotoStatus.ACTIVE),
+                albumRepository.countByUserId(userId),
+                sharedLinkRepository.countActiveByUserId(userId, Instant.now()),
+                photoRepository.countByUserIdAndStatus(userId, PhotoStatus.ARCHIVE),
+                photoRepository.countByUserIdAndStatus(userId, PhotoStatus.TRASH));
     }
 
     @Transactional(readOnly = true)

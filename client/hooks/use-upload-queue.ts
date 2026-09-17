@@ -188,6 +188,7 @@ export function useUploadQueue() {
       if (pathnameRef.current !== "/favorites") {
         queryClient.invalidateQueries({ queryKey: photoKeys.all });
         queryClient.invalidateQueries({ queryKey: libraryKeys.storage() });
+        queryClient.invalidateQueries({ queryKey: libraryKeys.counts() });
       }
     }, delay);
   }, [queryClient]);

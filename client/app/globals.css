@@ -90,6 +90,18 @@
   --scrollbar-thumb: #c4c4c4;
   --scrollbar-thumb-hover: #a3a3a3;
   --selection: color-mix(in oklab, var(--primary) 20%, transparent);
+  /* Comma-separated RGB twins of the tokens above, for translucent glass
+     surfaces: rgba(var(--background-rgb), 0.8). Keep in sync with the hex. */
+  --background-rgb: 255, 255, 255;
+  --card-rgb: 255, 255, 255;
+  --border-rgb: 229, 229, 229;
+  --primary-rgb: 26, 115, 232;
+  --foreground-rgb: 10, 10, 10;
+  /* Elevation: 0 page, 1 sidebar/header/bottom nav, 2 dropdowns/panels/
+     tooltips, 3 dialogs and the viewer. */
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 12px rgba(0, 0, 0, 0.04);
+  --elevation-2: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --elevation-3: 0 24px 64px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .dark {
@@ -130,6 +142,15 @@
   --scrollbar-thumb: #404040;
   --scrollbar-thumb-hover: #525252;
   --selection: color-mix(in oklab, var(--primary) 30%, transparent);
+  --background-rgb: 10, 10, 10;
+  --card-rgb: 23, 23, 23;
+  --border-rgb: 46, 46, 46;
+  --primary-rgb: 77, 166, 255;
+  --foreground-rgb: 250, 250, 250;
+  /* Shadows barely read on black - dark elevation leans on the glass edge. */
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-2: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --elevation-3: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 @layer base {
@@ -214,6 +235,172 @@ html:has([data-fixed-theme="dark"]) body {
   }
   html.theme-transition :is(img, video, canvas) {
     transition: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Surfaces: glass and elevation                                            */
+/* Navigation floats above the page on translucent, blurred layers. Dark    */
+/* glass gets a little more opacity and a little less blur (blur reads      */
+/* heavier on black) plus a faint light top edge. Browsers without          */
+/* backdrop-filter get the same surfaces fully opaque.                      */
+/* ------------------------------------------------------------------------ */
+
+@layer components {
+  .glass-sidebar {
+    background-color: rgba(var(--background-rgb), 0.8);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-right: 1px solid rgba(var(--border-rgb), 0.5);
+    box-shadow: var(--elevation-1);
+    will-change: backdrop-filter;
+  }
+  .dark .glass-sidebar {
+    background-color: rgba(var(--background-rgb), 0.85);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-header {
+    background-color: rgba(var(--background-rgb), 0.8);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
+    will-change: backdrop-filter;
+  }
+  .dark .glass-header {
+    background-color: rgba(var(--background-rgb), 0.85);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .glass-bottom-nav {
+    background-color: rgba(var(--background-rgb), 0.85);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    backdrop-filter: blur(24px) saturate(200%);
+    border-top: 1px solid rgba(var(--border-rgb), 0.3);
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.05);
+    will-change: backdrop-filter;
+  }
+  .dark .glass-bottom-nav {
+    background-color: rgba(var(--background-rgb), 0.9);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    backdrop-filter: blur(20px) saturate(200%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-chip-bar {
+    background-color: rgba(var(--background-rgb), 0.9);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    will-change: backdrop-filter;
+  }
+  .dark .glass-chip-bar {
+    background-color: rgba(var(--background-rgb), 0.95);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-panel {
+    background-color: rgba(var(--card-rgb), 0.95);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--elevation-2);
+    will-change: backdrop-filter;
+  }
+  .dark .glass-panel {
+    /* Already near-opaque; the extra 0.05 caps at fully solid. */
+    background-color: rgba(var(--card-rgb), 1);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-tooltip {
+    background-color: rgba(var(--foreground-rgb), 0.85);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+    box-shadow: var(--elevation-2);
+    color: var(--background);
+  }
+
+  .elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+  .elevation-2 {
+    box-shadow: var(--elevation-2);
+  }
+  .elevation-3 {
+    box-shadow: var(--elevation-3);
+  }
+
+  /* A divider that fades out at both ends instead of a hard full-width line. */
+  .divider-fade {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+  }
+
+  /* Horizontal rows (chip bars, toolbar actions): no scrollbar at all. They
+     scroll by touch, trackpad, shift+wheel or arrow keys, and fade at the edge
+     to show there's more. A scrollbar appearing on hover would push the chips
+     up by its height. */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Vertical lists: a thin scrollbar that stays invisible until the pointer is
+     over the area. It keeps its space the whole time, so revealing it never
+     reflows the list. Touch screens get none. */
+  .scrollbar-hover {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .scrollbar-hover::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-hover::-webkit-scrollbar-track,
+  .scrollbar-hover::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  @media (hover: hover) {
+    .scrollbar-hover:hover {
+      scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+    }
+    .scrollbar-hover:hover::-webkit-scrollbar-thumb {
+      background: rgba(128, 128, 128, 0.3);
+      border-radius: 2px;
+    }
+  }
+  @media (hover: none) {
+    .scrollbar-hover {
+      scrollbar-width: none;
+    }
+    .scrollbar-hover::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-sidebar,
+  .glass-header,
+  .glass-bottom-nav,
+  .glass-chip-bar {
+    background-color: var(--background);
+  }
+  .glass-panel {
+    background-color: var(--card);
+  }
+  .glass-tooltip {
+    background-color: var(--foreground);
   }
 }
 

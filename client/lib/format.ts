@@ -52,15 +52,19 @@ export type DateGroup<T> = {
 };
 
 /**
- * Groups items (newest first) into day buckets, Google Photos style - by the
- * day a photo was taken, falling back to its upload day when there's no EXIF
- * date. Item order within a day is kept as the API returned it.
+ * Groups items into day buckets, Google Photos style - by the day a photo was
+ * taken (falling back to its upload day when there's no EXIF date), or by its
+ * upload day when the list is sorted by date added. Days run newest first
+ * unless `ascending`; item order within a day is kept as the API returned it.
  */
-export function groupByDay<T extends { createdAt: string; dateTaken?: string | null }>(items: T[]): DateGroup<T>[] {
+export function groupByDay<T extends { createdAt: string; dateTaken?: string | null }>(
+  items: T[],
+  { byUploadDate = false, ascending = false }: { byUploadDate?: boolean; ascending?: boolean } = {},
+): DateGroup<T>[] {
   const groups = new Map<string, { date: Date; items: T[] }>();
 
   for (const item of items) {
-    const date = getPhotoDate(item);
+    const date = byUploadDate ? new Date(item.createdAt) : getPhotoDate(item);
     const key = format(date, "yyyy-MM-dd");
     const bucket = groups.get(key);
     if (bucket) {
@@ -71,7 +75,7 @@ export function groupByDay<T extends { createdAt: string; dateTaken?: string | n
   }
 
   return Array.from(groups.entries())
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1) * (ascending ? -1 : 1))
     .map(([key, group]) => ({
       key,
       heading: formatDateHeading(group.date),

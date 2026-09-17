@@ -153,13 +153,4 @@ class AlbumSuggestionEngineTest {
         assertThat(AlbumSuggestionEngine.partOfDay(2)).isEqualTo("Night");
         assertThat(AlbumSuggestionEngine.titleCase("golden retriever")).isEqualTo("Golden Retriever");
     }
-
-    @Test
-    void recognizesColorTags() {
-        assertThat(AlbumSuggestionEngine.isColorTag("blue")).isTrue();
-        assertThat(AlbumSuggestionEngine.isColorTag("sky blue")).isTrue();
-        assertThat(AlbumSuggestionEngine.isColorTag("blue sky")).isFalse();
-        assertThat(AlbumSuggestionEngine.isColorTag("golden hour")).isFalse();
-        assertThat(AlbumSuggestionEngine.isColorTag("beach")).isFalse();
-    }
 }

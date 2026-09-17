@@ -82,10 +82,8 @@ public class PhotoService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PhotoResponse> listPhotos(User user, PhotoStatus status, Boolean starred, Pageable pageable) {
-        Page<Photo> page = starred == null
-                ? photoRepository.findTimeline(user.getId(), status, pageable)
-                : photoRepository.findTimelineByStarred(user.getId(), status, starred, pageable);
+    public PageResponse<PhotoResponse> listPhotos(User user, PhotoFilter filter, Pageable pageable) {
+        Page<Photo> page = photoRepository.findAll(PhotoSpecifications.filtered(user.getId(), filter), pageable);
         return toPageResponse(page);
     }
 

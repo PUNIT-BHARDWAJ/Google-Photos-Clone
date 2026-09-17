@@ -17,11 +17,15 @@ import { ErrorState } from "@/components/layout/error-state";
 import { PhotoGrid } from "@/components/photos/photo-grid";
 import { PhotoGridSkeleton } from "@/components/photos/photo-grid-skeleton";
 import { PhotoViewer } from "@/components/photos/photo-viewer";
-import { SelectionAction, SelectionToolbar } from "@/components/photos/selection-toolbar";
+import { PhotoToolbar, TOOLBAR_STICKY_OFFSET } from "@/components/photos/photo-toolbar";
+import { SelectionAction } from "@/components/photos/selection-toolbar";
+import { ViewControls } from "@/components/photos/view-controls";
 import { AlbumActionsMenu } from "@/components/albums/album-actions-menu";
 import { PhotoTileMenu } from "@/components/albums/photo-tile-menu";
 import { SelectPhotosDialog } from "@/components/albums/select-photos-dialog";
 import { useAlbum, useAlbumPhotos, useRemovePhotoFromAlbum, useUpdateAlbum } from "@/hooks/use-albums";
+import { useGridDensity } from "@/hooks/use-grid-preferences";
+import { useDownloadPhotos } from "@/hooks/use-photos";
 import { useSelection } from "@/hooks/use-selection";
 import { isNetworkError, type Photo } from "@/lib/api";
 
@@ -39,10 +43,13 @@ export default function AlbumDetailPage() {
   const selection = useSelection();
   const removePhoto = useRemovePhotoFromAlbum();
   const updateAlbum = useUpdateAlbum();
+  const downloadPhotos = useDownloadPhotos();
+  const [density, setDensity] = useGridDensity();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [addPhotosOpen, setAddPhotosOpen] = useState(false);
 
   const photos = data?.pages.flatMap((page) => page.content) ?? [];
+  const selectedPhotos = photos.filter((photo) => selection.selectedIds.has(photo.id));
   const coverPhotoId = album?.coverPhotoId;
   // Stable across renders (the grid is memoized); only a cover change or a
   // different album gives the tiles a new menu.
@@ -89,45 +96,55 @@ export default function AlbumDetailPage() {
   }
 
   return (
-    <div>
-      {selection.isActive ? (
-        <SelectionToolbar
-          count={selection.count}
-          onClear={selection.clear}
-          actions={
-            <SelectionAction
-              variant="destructive"
-              icon={<RiSubtractLine />}
-              label="Remove from album"
-              onClick={() => handleRemoveMany(selection.ids)}
-            />
-          }
-        />
-      ) : (
-        <div className="mb-6 flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <Link
-              href="/albums"
-              className={buttonVariants({ variant: "ghost", size: "icon-sm", className: "mt-0.5 shrink-0" })}
-              aria-label="Back to albums"
-            >
-              <RiArrowLeftLine className="size-4" />
-            </Link>
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">{album.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                {album.photoCount} item{album.photoCount === 1 ? "" : "s"}
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" onClick={() => setAddPhotosOpen(true)}>
-              <RiImageAddLine />
-              Add photos
-            </Button>
-            <AlbumActionsMenu album={album} />
+    <div style={{ "--sticky-offset": TOOLBAR_STICKY_OFFSET } as React.CSSProperties}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <Link
+            href="/albums"
+            className={buttonVariants({ variant: "ghost", size: "icon-sm", className: "mt-0.5 shrink-0" })}
+            aria-label="Back to albums"
+          >
+            <RiArrowLeftLine className="size-4" />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">{album.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              {album.photoCount} item{album.photoCount === 1 ? "" : "s"}
+            </p>
           </div>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="outline" onClick={() => setAddPhotosOpen(true)}>
+            <RiImageAddLine />
+            <span className="max-sm:sr-only">Add photos</span>
+          </Button>
+          <AlbumActionsMenu album={album} />
+        </div>
+      </div>
+
+      {photos.length > 0 && (
+        <PhotoToolbar
+          selectionCount={selection.count}
+          onClearSelection={selection.clear}
+          controls={<ViewControls density={density} onDensityChange={setDensity} />}
+          selectionActions={
+            <>
+              <SelectionAction
+                variant="outline"
+                icon={<RiDownloadLine />}
+                label="Download"
+                onClick={() => downloadPhotos.mutate(selectedPhotos)}
+                disabled={downloadPhotos.isPending}
+              />
+              <SelectionAction
+                variant="destructive"
+                icon={<RiSubtractLine />}
+                label="Remove from album"
+                onClick={() => handleRemoveMany(selection.ids)}
+              />
+            </>
+          }
+        />
       )}
 
       {isError && photos.length === 0 ? (
@@ -157,6 +174,7 @@ export default function AlbumDetailPage() {
           isFetchingNextPage={isFetchingNextPage}
           onLoadMore={fetchNextPage}
           renderTileMenu={renderTileMenu}
+          density={density}
         />
       )}
 
@@ -167,15 +185,16 @@ export default function AlbumDetailPage() {
         onIndexChange={setViewerIndex}
         renderActions={(photo) => (
           <>
-            <a
-              href={photo.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Open original"
-              className={buttonVariants({ variant: "ghost", size: "icon-sm", className: "text-white hover:bg-white/10" })}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-white/10"
+              onClick={() => downloadPhotos.mutate([photo])}
+              disabled={downloadPhotos.isPending}
+              aria-label="Download"
             >
               <RiDownloadLine className="size-4" />
-            </a>
+            </Button>
             <Button
               variant="ghost"
               size="icon-sm"

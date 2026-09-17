@@ -1,6 +1,7 @@
 package project.backend.services;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -173,6 +174,26 @@ public class ImageKitService {
             : new ImageKitUploadException("Timed out waiting for AI transformation to finish");
     }
 
+
+    /** Streams a stored original (no transformation) for downloads. The caller closes the body. */
+    public HttpResponse<InputStream> openOriginal(String sourceUrl) {
+        if (sourceUrl == null || sourceUrl.isBlank()) {
+            throw new ImageKitUploadException("Photo has no URL to download");
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(stripQuery(sourceUrl)))
+                    .timeout(Duration.ofSeconds(60))
+                    .GET()
+                    .build();
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        } catch (IOException ex) {
+            throw new ImageKitUploadException("Couldn't download the photo", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ImageKitUploadException("Photo download was interrupted", ex);
+        }
+    }
 
     /**
      * A JPEG no larger than 1024px on its long edge, for sending to Gemini:

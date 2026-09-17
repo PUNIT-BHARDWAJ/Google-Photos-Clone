@@ -281,7 +281,7 @@ public final class GeminiResponseParser {
             }
             tag = tag.replace('_', ' ');
             tag = TAG_DISALLOWED.matcher(tag).replaceAll("");
-            tag = WHITESPACE.matcher(tag).replaceAll(" ").trim();
+            tag = TagVocabulary.normalizeSpelling(WHITESPACE.matcher(tag).replaceAll(" ").trim());
             if (tag.isEmpty() || tag.length() > MAX_TAG_LENGTH) {
                 continue;
             }
@@ -331,7 +331,7 @@ public final class GeminiResponseParser {
                 color = color.startsWith("#") ? color : "#" + color;
             } else {
                 color = COLOR_DISALLOWED.matcher(color).replaceAll("");
-                color = WHITESPACE.matcher(color).replaceAll(" ").trim();
+                color = TagVocabulary.normalizeSpelling(WHITESPACE.matcher(color).replaceAll(" ").trim());
             }
             if (color.isEmpty() || color.length() > 30) {
                 continue;

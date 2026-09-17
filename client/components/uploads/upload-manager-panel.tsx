@@ -110,7 +110,7 @@ export function UploadManagerPanel({ items, onRetry, onDismiss }: UploadManagerP
       ref={panelRef}
       role="status"
       aria-live="polite"
-      className="fixed bottom-24 right-6 z-30 w-80 max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-xl dark:shadow-none"
+      className="fixed bottom-24 right-6 z-30 w-80 max-w-[calc(100vw-3rem)] max-md:right-4 max-md:bottom-[calc(148px+env(safe-area-inset-bottom))] max-md:max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-xl dark:shadow-none"
     >
       <button
         type="button"

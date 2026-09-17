@@ -7,9 +7,10 @@ export const authKeys = {
 export const photoKeys = {
   all: ["photos"] as const,
   lists: () => [...photoKeys.all, "list"] as const,
-  list: (status: string, starred?: boolean) => [...photoKeys.lists(), status, starred ?? null] as const,
+  list: (status: string, filters: object = {}, sort = "taken_desc") => [...photoKeys.lists(), status, filters, sort] as const,
   detail: (id: string) => [...photoKeys.all, "detail", id] as const,
-  search: (query: string, ai = false) => [...photoKeys.all, "search", query, ai] as const,
+  search: (query: string, ai = false, filters: object = {}) => [...photoKeys.all, "search", query, ai, filters] as const,
+  facets: () => [...photoKeys.all, "facets"] as const,
   metadata: (id: string) => [...photoKeys.all, "metadata", id] as const,
 };
 
@@ -30,6 +31,7 @@ export const aiKeys = {
 export const libraryKeys = {
   all: ["library"] as const,
   storage: () => [...libraryKeys.all, "storage"] as const,
+  counts: () => [...libraryKeys.all, "counts"] as const,
   imagekitAssets: () => [...libraryKeys.all, "imagekit-assets"] as const,
 };
 

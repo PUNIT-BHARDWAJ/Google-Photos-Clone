@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import project.backend.domain.User;
 import project.backend.dto.ImageKitAssetResponse;
 import project.backend.dto.ImportPhotosRequst;
+import project.backend.dto.LibraryCountsResponse;
 import project.backend.dto.PhotoResponse;
 import project.backend.dto.StorageUsageResponse;
 import project.backend.services.LibraryService;
@@ -38,6 +39,13 @@ public class LibraryController {
     ) {
         User user = userService.getByEmail(userDetails.getUsername());
         return ResponseEntity.ok(libraryService.getStorageUsage(user));
+    }
+
+    /** Item counts for the navigation badges. */
+    @GetMapping("/counts")
+    public ResponseEntity<LibraryCountsResponse> getCounts(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.getByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(libraryService.getCounts(user));
     }
 
     @GetMapping("/imagekit-assets")

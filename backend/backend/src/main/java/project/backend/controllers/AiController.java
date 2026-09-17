@@ -59,13 +59,14 @@ public class AiController {
         return ResponseEntity.ok(aiAnalysisService.status(user, refresh));
     }
 
-    /** The user's most common AI tags, for search suggestions. */
+    /** The user's most common AI tags, for search suggestions - style and color words left out by default. */
     @GetMapping("/top-tags")
     public ResponseEntity<List<TagCountResponse>> topTags(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "8") int limit
+            @RequestParam(defaultValue = "8") int limit,
+            @RequestParam(defaultValue = "false") boolean includeGeneric
     ) {
         User user = userService.getByEmail(userDetails.getUsername());
-        return ResponseEntity.ok(photoSearchService.topTags(user, limit));
+        return ResponseEntity.ok(photoSearchService.topTags(user, limit, includeGeneric));
     }
 }

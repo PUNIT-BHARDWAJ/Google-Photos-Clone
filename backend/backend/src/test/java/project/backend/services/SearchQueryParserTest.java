@@ -57,6 +57,6 @@ class SearchQueryParserTest {
 
     @Test
     void escapesLikeWildcards() {
-        assertThat(PhotoSearchService.escapeLikePattern("100%_off\\")).isEqualTo("100\\%\\_off\\\\");
+        assertThat(PhotoSpecifications.escapeLike("100%_off\\")).isEqualTo("100\\%\\_off\\\\");
     }
 }

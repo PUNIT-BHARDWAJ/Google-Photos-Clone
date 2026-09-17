@@ -68,17 +68,6 @@ public final class AlbumSuggestionEngine {
             Map.entry("sport", "Sports"),
             Map.entry("event", "Events & Celebrations"));
 
-    // Too broad to be an album on their own.
-    static final Set<String> GENERIC_TAGS = Set.of(
-            "outdoor", "outdoors", "indoor", "indoors", "daytime", "day", "photo", "photography", "image",
-            "picture", "color", "colors", "colorful", "colourful", "no people", "background", "view", "scene");
-
-    // Gemini often tags colors ("blue", "sky blue", "dark green"), but nobody
-    // wants a "Blue Photos" album - a tag ending in one of these is skipped.
-    static final Set<String> COLOR_WORDS = Set.of(
-            "red", "orange", "yellow", "green", "blue", "purple", "violet", "pink", "brown", "black", "white",
-            "gray", "grey", "gold", "golden", "silver", "beige", "teal", "turquoise", "navy", "cream");
-
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM d yyyy", Locale.ENGLISH);
 
     private AlbumSuggestionEngine() {
@@ -158,7 +147,7 @@ public final class AlbumSuggestionEngine {
                 continue;
             }
             for (String tag : new HashSet<>(photo.tags())) {
-                if (!GENERIC_TAGS.contains(tag) && !isColorTag(tag)) {
+                if (!TagVocabulary.isGeneric(tag)) {
                     groups.computeIfAbsent(tag, key -> new ArrayList<>()).add(photo.id());
                 }
             }
@@ -212,12 +201,6 @@ public final class AlbumSuggestionEngine {
                     burst.size() + " photos taken within two hours"));
         }
         return suggestions;
-    }
-
-    /** "blue", "sky blue", "light green" - but not "blue sky" or "golden hour". */
-    static boolean isColorTag(String tag) {
-        String[] words = tag.trim().split("\\s+");
-        return COLOR_WORDS.contains(words[words.length - 1]);
     }
 
     static String partOfDay(int hour) {

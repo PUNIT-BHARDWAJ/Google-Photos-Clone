@@ -34,16 +34,6 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID>, JpaSpecific
     """)
     Page<Photo> findTimeline(UUID userId, PhotoStatus status, Pageable pageable);
 
-    @Query(value = """
-        SELECT p FROM Photo p
-        WHERE p.user.id = :userId AND p.status = :status AND p.starred = :starred
-        ORDER BY COALESCE(p.metadata.dateTaken, p.createdAt) DESC, p.createdAt DESC, p.id DESC
-    """, countQuery = """
-        SELECT COUNT(p) FROM Photo p
-        WHERE p.user.id = :userId AND p.status = :status AND p.starred = :starred
-    """)
-    Page<Photo> findTimelineByStarred(UUID userId, PhotoStatus status, boolean starred, Pageable pageable);
-
     List<Photo> findByIdInAndUserId(List<UUID> ids, UUID userId);
     Optional<Photo> findByIdAndUserId(UUID id, UUID userId);
 
@@ -52,6 +42,8 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID>, JpaSpecific
     boolean existsByImageKitFileIdAndUserId(String imageKitFileId, UUID userId);
 
     long countByUserIdAndStatus(UUID userId, PhotoStatus status);
+
+    long countByUserIdAndStatusAndStarredTrue(UUID userId, PhotoStatus status);
 
     @Query("""
         SELECT COALESCE(SUM(p.sizeBytes), 0)
@@ -103,4 +95,23 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID>, JpaSpecific
         WHERE p.user.id = :userId AND p.status = :status AND p.aiTags IS NOT NULL
     """)
     List<String> findAiTags(UUID userId, PhotoStatus status);
+
+    // [sceneType, dominantColors, tags] for every analyzed photo - facet counts.
+    @Query("""
+        SELECT p.aiSceneType, p.aiDominantColors, p.aiTags FROM Photo p
+        WHERE p.user.id = :userId AND p.status = :status AND p.aiProcessedAt IS NOT NULL
+    """)
+    List<Object[]> findAiFacetValues(UUID userId, PhotoStatus status);
+
+    // Analyses stored before tags and colors were normalized to "gray".
+    @Query("""
+        SELECT p FROM Photo p
+        WHERE LOWER(p.aiTags) LIKE '%grey%' OR LOWER(p.aiDominantColors) LIKE '%grey%'
+    """)
+    List<Photo> findWithGreySpelling();
+
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Photo p SET p.aiTags = :tags, p.aiDominantColors = :dominantColors WHERE p.id = :photoId")
+    int saveAiLists(UUID photoId, String tags, String dominantColors);
 }

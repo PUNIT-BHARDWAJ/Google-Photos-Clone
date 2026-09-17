@@ -69,12 +69,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {/* Lifted 96px off the bottom so toasts clear the 56px upload FAB
                 (bottom-6), plus the upload manager panel's height while it's
                 open (it sits right there at bottom-24) - the panel publishes
-                that as --upload-panel-offset. */}
+                that as --upload-panel-offset. On phones the FAB and panel sit
+                above the bottom bar, so toasts start higher. */}
             <Toaster
               position="bottom-right"
               richColors
               offset={{ bottom: "calc(96px + var(--upload-panel-offset, 0px))", right: 24 }}
-              mobileOffset={{ bottom: "calc(96px + var(--upload-panel-offset, 0px))" }}
+              mobileOffset={{ bottom: "calc(148px + env(safe-area-inset-bottom) + var(--upload-panel-offset, 0px))" }}
             />
           </ThemeProvider>
           </body>

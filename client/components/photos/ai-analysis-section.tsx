@@ -1,50 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import {
-  RiBasketballLine,
-  RiBearSmileLine,
-  RiBuilding2Line,
-  RiCake2Line,
-  RiCarLine,
-  RiFileTextLine,
-  RiHome4Line,
-  RiImageLine,
-  RiLandscapeLine,
-  RiMoonClearLine,
-  RiPaletteLine,
-  RiRefreshLine,
-  RiRestaurantLine,
-  RiScreenshot2Line,
-  RiSparkling2Line,
-  RiTreeLine,
-  RiUser3Line,
-  RiZoomInLine,
-  type RemixiconComponentType,
-} from "@remixicon/react";
+import { RiRefreshLine, RiSparkling2Line } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAiStatus, useAnalyzePhoto, usePendingAnalysis } from "@/hooks/use-ai";
 import { colorNameToCss, formatSceneType } from "@/lib/ai";
 import type { Photo } from "@/lib/api";
-
-const SCENE_ICONS: Record<string, RemixiconComponentType> = {
-  outdoor: RiTreeLine,
-  indoor: RiHome4Line,
-  portrait: RiUser3Line,
-  landscape: RiLandscapeLine,
-  food: RiRestaurantLine,
-  document: RiFileTextLine,
-  screenshot: RiScreenshot2Line,
-  art: RiPaletteLine,
-  animal: RiBearSmileLine,
-  vehicle: RiCarLine,
-  architecture: RiBuilding2Line,
-  night: RiMoonClearLine,
-  macro: RiZoomInLine,
-  sport: RiBasketballLine,
-  event: RiCake2Line,
-};
+import { SceneIcon } from "@/components/photos/scene-icon";
 
 type AiAnalysisSectionProps = {
   photo: Photo;
@@ -118,7 +81,6 @@ export function AiAnalysisSection({ photo, open, onSearchTag }: AiAnalysisSectio
     );
   }
 
-  const SceneIcon = (photo.aiSceneType && SCENE_ICONS[photo.aiSceneType]) || RiImageLine;
   const colors = photo.aiDominantColors
     .map((name) => ({ name, css: colorNameToCss(name) }))
     .filter((color): color is { name: string; css: string } => color.css !== null);
@@ -150,7 +112,7 @@ export function AiAnalysisSection({ photo, open, onSearchTag }: AiAnalysisSectio
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="text-muted-foreground">Scene</span>
             <span className="inline-flex items-center gap-1.5 text-foreground">
-              <SceneIcon className="size-4 text-muted-foreground" />
+              <SceneIcon scene={photo.aiSceneType} className="size-4 text-muted-foreground" />
               {formatSceneType(photo.aiSceneType)}
             </span>
           </div>

@@ -44,7 +44,7 @@ public final class SearchQueryParser {
             if (cleaned.isEmpty() || STOPWORDS.contains(cleaned)) {
                 continue;
             }
-            String term = stem(cleaned);
+            String term = stem(TagVocabulary.normalizeSpelling(cleaned));
             if (!terms.contains(term)) {
                 terms.add(term);
             }
