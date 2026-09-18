@@ -290,6 +290,14 @@ public class PhotoService {
 
     @Transactional
     public void permanentlyDeletePhotos(User user, List<UUID> photoIds) {
+        // Permanent deletion removes the file from ImageKit, and the demo
+        // library is shared with everyone who opens the hosted demo. One
+        // visitor emptying the trash would take the images away for good - for
+        // every other visitor, and beyond what re-seeding could restore.
+        if (UserService.isDemoAccount(user)) {
+            throw new BadRequestException("The demo account cannot be modified");
+        }
+
         List<Photo> photos = photoRepository.findByIdInAndUserId(photoIds, user.getId());
         if (photos.size() != photoIds.size()) {
             throw new ResourceNotFoundException("One or more photos were not found");

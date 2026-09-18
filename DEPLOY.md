@@ -198,6 +198,51 @@ that the first request may take ~30 seconds.
 
 ---
 
+## The demo account
+
+The hosted deployment carries a shared account so visitors can look around a
+populated library without registering. Its credentials are printed on the
+sign-in page:
+
+```
+demo@google-photos-clone.app / DemoPass123!
+```
+
+The API refuses to change that account's password or display name, and refuses
+permanent deletion of its photos — otherwise the first visitor could lock
+everyone else out, or empty the trash and take the images with them. Everything
+else (uploading, starring, albums, archiving, trashing) still works, so the demo
+stays explorable.
+
+### Seeding it
+
+1. Register the account once, against the production API:
+   ```bash
+   curl -X POST https://your-service.onrender.com/api/auth/register      -H "Content-Type: application/json"      -d '{"email":"demo@google-photos-clone.app","password":"DemoPass123!","displayName":"Demo User"}'
+   ```
+2. Open **Neon → SQL Editor**, paste [`scripts/seed-demo.sql`](scripts/seed-demo.sql)
+   and run it. (Or `psql "$DATABASE_URL" -f scripts/seed-demo.sql`.)
+3. It prints the result: **28 photos, 8 starred, 3 albums**.
+
+The script clears the demo account's photos and albums first, so re-running it
+resets the demo to a known state after visitors have been poking at it.
+
+### What the seed contains
+
+The 28 photographs from the development library, with every Gemini caption,
+tag, scene type and colour exactly as the model produced them. `date_taken` is
+demo data: these are stock images with no EXIF date, and without one the whole
+library collapses under a single day heading. Upload timestamps are real.
+
+> **Note:** the seeded rows point at the same ImageKit files as the development
+> library — the script copies database rows, not images. Permanently deleting
+> one of those photos from your own account would remove the file from ImageKit
+> and break it in the demo too. (The demo account itself can't permanently
+> delete anything.) To decouple them entirely, copy the assets into a separate
+> ImageKit folder and update the URLs in the seed.
+
+---
+
 ## Cold starts
 
 Render's free plan stops the container after 15 minutes of inactivity, so the

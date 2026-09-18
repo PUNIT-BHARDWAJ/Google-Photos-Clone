@@ -17,6 +17,14 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class UserService {
 
+    /**
+     * The shared account behind the public demo. Its credentials are printed on
+     * the sign-in page, so anyone who opens the demo could otherwise change the
+     * password and lock out every other visitor - or rename the account to
+     * whatever they liked, in public. It stays as it is.
+     */
+    private static final String DEMO_EMAIL = "demo@google-photos-clone.app";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -42,8 +50,17 @@ public class UserService {
         return userRepository.existsById(userId);
     }
 
+    /** True for the shared demo account, which cannot be modified. */
+    public static boolean isDemoAccount(User user) {
+        return user != null && DEMO_EMAIL.equalsIgnoreCase(user.getEmail());
+    }
+
     @Transactional
     public UserResponse updateProfile(User user, UpdateProfileRequest request) {
+        if (isDemoAccount(user)) {
+            throw new BadRequestException("The demo account cannot be modified");
+        }
+
         if (request.displayName() != null && !request.displayName().isBlank()) {
             user.setDisplayName(request.displayName().trim());
         }

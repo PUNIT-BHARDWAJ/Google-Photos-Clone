@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DemoCredentialsCard } from "@/components/auth/demo-credentials-card";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -106,7 +107,7 @@ function AuthFormContent({ mode }: AuthFormProps) {
     error instanceof Error ? error.message : isLogin ? "Unable to sign in" : "Unable to create account";
 
   if (isLogin) {
-    const { register, handleSubmit, formState } = loginForm;
+    const { register, handleSubmit, formState, setValue } = loginForm;
 
     return (
       <form
@@ -168,6 +169,15 @@ function AuthFormContent({ mode }: AuthFormProps) {
             Sign up
           </Link>
         </p>
+
+        {/* Hosted deployment only - fills the fields so the visitor still
+            presses "Sign in" themselves. */}
+        <DemoCredentialsCard
+          onUse={(email, password) => {
+            setValue("email", email, { shouldValidate: true });
+            setValue("password", password, { shouldValidate: true });
+          }}
+        />
       </form>
     );
   }
