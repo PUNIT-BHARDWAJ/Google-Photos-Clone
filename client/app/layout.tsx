@@ -7,6 +7,8 @@ import QueryProvider from "@/components/provider/query-provider";
 import { MotionProvider } from "@/components/provider/motion-provider";
 import { ThemeTransition } from "@/components/provider/theme-transition";
 import { Toaster } from "@/components/ui/sonner";
+import { ColdStartSplash } from "@/components/layout/cold-start-splash";
+import { ConnectionIndicator } from "@/components/layout/connection-indicator";
 const raleway = Raleway({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
@@ -66,6 +68,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <QueryProvider>
               <MotionProvider>{children}</MotionProvider>
             </QueryProvider>
+            {/* The API sleeps on its free plan; these explain a slow first
+                request rather than leaving a blank screen. */}
+            <ColdStartSplash />
+            <ConnectionIndicator />
             {/* Lifted 96px off the bottom so toasts clear the 56px upload FAB
                 (bottom-6), plus the upload manager panel's height while it's
                 open (it sits right there at bottom-24) - the panel publishes

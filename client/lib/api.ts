@@ -1,11 +1,31 @@
 // import { useAuthStore } from "@/hooks/use-auth";
 
 import { toast } from "sonner";
+import { finishRequest, startRequest, tracksColdStart } from "@/lib/api-activity";
 import { useAuthStore } from "@/stores/auth-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export const NETWORK_ERROR_MESSAGE = "Unable to connect to server. Please try again later.";
+
+/**
+ * fetch, with the wait reported to the activity store so the UI can explain a
+ * sleeping free-tier backend (see lib/api-activity.ts). `track` is false for
+ * calls that are legitimately slow, like uploads and AI analysis.
+ */
+async function timedFetch(url: string, init: RequestInit, track: boolean) {
+  const id = track ? startRequest() : null;
+  try {
+    const response = await fetch(url, init);
+    if (id !== null) finishRequest(id, "reached");
+    return response;
+  } catch (error) {
+    // A deliberate abort says nothing about the server's health.
+    const aborted = error instanceof DOMException && error.name === "AbortError";
+    if (id !== null) finishRequest(id, aborted ? "reached" : "unreachable");
+    throw error;
+  }
+}
 
 /** True when a request failed because the server couldn't be reached at all. */
 export function isNetworkError(error: unknown) {
@@ -300,11 +320,15 @@ const CONNECTION_TOAST_ID = "connection-status";
 async function attemptRefresh(refreshToken: string): Promise<RefreshOutcome> {
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    });
+    response = await timedFetch(
+      `${API_URL}/auth/refresh`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      },
+      true,
+    );
   } catch {
     return { status: "unreachable" };
   }
@@ -418,7 +442,7 @@ async function requestBlob(path: string, body: unknown): Promise<{ blob: Blob; c
     const headers = new Headers({ "Content-Type": "application/json" });
     if (token) headers.set("Authorization", `Bearer ${token}`);
     try {
-      return await fetch(`${API_URL}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
+      return await timedFetch(`${API_URL}${path}`, { method: "POST", headers, body: JSON.stringify(body) }, false);
     } catch {
       throw new Error(NETWORK_ERROR_MESSAGE);
     }
@@ -464,7 +488,7 @@ async function request<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, { ...options, headers });
+    response = await timedFetch(`${API_URL}${path}`, { ...options, headers }, tracksColdStart(path, options.body));
   } catch (error) {
     // fetch only rejects when no HTTP response arrived at all (server down,
     // offline, DNS, CORS) - the browser's own "Failed to fetch" / "Load

@@ -1,0 +1,9 @@
+# Build output and local config never belong in the image context.
+target/
+.mvn/wrapper/maven-wrapper.jar
+application-local.properties
+*.log
+.git/
+.idea/
+.vscode/
+HELP.md

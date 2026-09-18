@@ -264,6 +264,13 @@ npm run dev
 ```
 The app runs at `http://localhost:3000`.
 
+### Deploying your own copy
+
+[DEPLOY.md](DEPLOY.md) walks through hosting it free on Vercel (frontend),
+Render (API, via the committed Dockerfile) and Neon (PostgreSQL), including the
+production OAuth2 redirect URIs and how the app handles a sleeping free-tier
+backend.
+
 ### 6. (Optional) Turn on AI features
 1. Get a free key from [Google AI Studio](https://aistudio.google.com/apikey)
 2. Add `gemini.api-key=...` to `application-local.properties`
