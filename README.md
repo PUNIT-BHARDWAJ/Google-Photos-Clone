@@ -6,6 +6,15 @@
 
 Built with **Spring Boot 4.1** · **Next.js 16** · **Google Gemini AI** · **TypeScript** · **Tailwind CSS**
 
+**🌐 [Try the live demo →](https://google-photos-clone-ten.vercel.app)**
+
+[![Vercel](https://img.shields.io/badge/deployed%20on-Vercel-black?logo=vercel)](https://google-photos-clone-ten.vercel.app)
+[![Render](https://img.shields.io/badge/API%20on-Render-46E3B7?logo=render&logoColor=white)](https://google-photos-clone.onrender.com/actuator/health)
+![Neon](https://img.shields.io/badge/database-Neon-00E599?logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+<sub>Hosted on free tiers — the API sleeps when idle, so the first request can take ~30 seconds. The app shows a splash while it wakes.</sub>
+
 [Features](#-features) · [Screenshots](#-screenshots) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Architecture](#-architecture) · [API Reference](#-api-reference)
 
 <img src="screenshots/hero-light.jpg" alt="Photo library in light mode" width="49%"> <img src="screenshots/hero-dark.jpg" alt="Photo library in dark mode" width="49%">
@@ -193,6 +202,13 @@ Expanded (240px) | Collapsed (64px, with tooltip)
 ---
 
 ## 🚀 Getting Started
+
+**Just want to look around?** Open the [live demo](https://google-photos-clone-ten.vercel.app),
+register an account (or use "Continue with Google") and upload a few photos. The
+first request wakes the free-tier API, which takes about 30 seconds; after that
+it's immediate.
+
+To run it yourself:
 
 ### Prerequisites
 - **Java 21+** (JDK)
