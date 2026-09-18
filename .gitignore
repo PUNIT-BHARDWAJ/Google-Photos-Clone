@@ -62,7 +62,3 @@ dist/
 ### OS files ###
 .DS_Store
 Thumbs.db
-
-### Claude Code local state ###
-.claude/scheduled_tasks.lock
-.claude/settings.local.json
